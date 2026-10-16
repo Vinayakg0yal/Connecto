@@ -50,10 +50,6 @@
     </div>
 
     <div id="freeBox" class="freebox">
-      <div class="row small">
-        <span>Notes left this month</span>
-        <strong id="notesLeft">–</strong>
-      </div>
       <label class="row small" for="fallback">
         <span>When notes run out</span>
         <select id="fallback">
@@ -64,18 +60,27 @@
     </div>
   </section>
 
-  <details class="block" id="limits">
-    <summary>Pacing &amp; limits</summary>
-    <div class="grid">
-      <label>Min delay (s)<input type="number" id="minDelay" min="3" max="300"></label>
-      <label>Max delay (s)<input type="number" id="maxDelay" min="3" max="600"></label>
-      <label>Max per run<input type="number" id="perRunCap" min="1" max="100"></label>
-      <label>Weekly cap<input type="number" id="weeklyCap" min="1" max="300"></label>
-      <label id="freeNotesWrap">Free notes / month<input type="number" id="freeNotesPerMonth" min="0" max="50"></label>
-      <label>Max pages<input type="number" id="maxPages" min="1" max="20"></label>
+  <section class="block">
+    <label class="check flush"><input type="checkbox" id="allPages"> Continue through all results pages automatically</label>
+  </section>
+
+  <details class="block usage" id="usage" open>
+    <summary>Usage &amp; limits</summary>
+    <div class="row small">
+      <span>Sent in the last 7 days</span>
+      <strong><span id="uWeek">0</span> <span class="muted">/ ~100</span></strong>
     </div>
-    <label class="check"><input type="checkbox" id="allPages"> Continue to the next results pages automatically</label>
-    <p class="hint">Delays are randomized between min and max. The weekly cap counts invites sent in the last 7 days.</p>
+    <div class="progress meter" aria-hidden="true"><div id="uWeekBar"></div></div>
+    <dl class="usage-list">
+      <div><dt>Sent today</dt><dd id="uToday">0</dd></div>
+      <div><dt>Sent this month</dt><dd id="uMonth">0</dd></div>
+      <div><dt>Notes sent this month</dt><dd id="uNotes">0</dd></div>
+      <div><dt>Personalized notes left</dt><dd id="uNotesLeft">–</dd></div>
+      <div><dt>Note length limit</dt><dd id="uNoteLen">–</dd></div>
+      <div><dt>Account</dt><dd id="uAccount">–</dd></div>
+    </dl>
+    <p id="uWeeklyHit" class="warn" hidden></p>
+    <p class="hint">For information only. Connecto never slows down or stops because of these numbers. LinkedIn doesn't publish its weekly invitation limit; about 100 a week is typical. If you go over, LinkedIn shows a warning and blocks invites for a while.</p>
     <button type="button" id="clearHistory" class="link danger">Reset counters &amp; history</button>
   </details>
 

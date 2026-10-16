@@ -27,9 +27,9 @@ Some profiles hide **Connect** behind **More**, or only allow following. Connect
 
 Check the message in the popup. Common reasons:
 
-- Max per run reached
-- Weekly cap reached (counts the last 7 days)
-- LinkedIn showed its weekly invitation limit warning
+- It finished the page (turn on **Continue through all results pages** to keep going)
+- No more result pages
+- LinkedIn showed its weekly invitation limit warning (the Usage & limits panel shows roughly when it lifts)
 - Notes ran out and "When notes run out" is set to **Stop the run**
 - The LinkedIn tab was closed or navigated away
 

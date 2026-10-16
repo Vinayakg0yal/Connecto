@@ -11,7 +11,6 @@
 
   const S = globalThis.CONNECTO_SEL;
   const NOTE = globalThis.CONNECTO_NOTE;
-  const WEEK = 7 * 24 * 60 * 60 * 1000;
   const LOG_MAX = 300;
   const HISTORY_MAX = 5000;
 
@@ -77,17 +76,6 @@
     return null;
   }
 
-  // Waits ms, but returns false early if the user pressed Stop.
-  async function pause(ms, label) {
-    const end = Date.now() + ms;
-    while (Date.now() < end) {
-      if (stopRequested) return false;
-      if (label) state.message = `${label} ${Math.ceil((end - Date.now()) / 1000)}s…`;
-      await push();
-      await sleep(Math.min(1000, Math.max(0, end - Date.now())));
-    }
-    return !stopRequested;
-  }
 
   const isSearchPage = () => location.pathname.startsWith('/search/results/people');
 
@@ -110,14 +98,6 @@
   async function setNoteQuota(patch) {
     const q = Object.assign(await getNoteQuota(), patch);
     try { await chrome.storage.local.set({ noteQuota: q }); } catch (_) {}
-  }
-  function weeklySent(history) {
-    const since = Date.now() - WEEK;
-    return history.filter(h => h.result === 'sent' && h.t >= since).length;
-  }
-  function notesUsedThisMonth(history) {
-    const m = monthKey();
-    return history.filter(h => h.result === 'sent' && h.withNote && monthKey(new Date(h.t)) === m).length;
   }
 
   /* ---------------- reading the search page ---------------- */
@@ -700,7 +680,7 @@
       return q.length && q[0].url !== firstUrl;
     }, 15000, 500);
     if (!ok) return false;
-    await sleep(rand(1500, 3000));
+    await sleep(rand(700, 1200)); // let the new results finish rendering
     return true;
   }
 
@@ -712,24 +692,17 @@
 
     const hasNote = !!((settings.note || '').trim() || (settings.shortNote || '').trim());
     const isFree = settings.mode === 'free';
-    const maxPages = settings.allPages ? Math.max(1, settings.maxPages || 1) : 1;
     let capMessage = '';
 
     try {
       if (!isSearchPage()) throw new StopRun('Open a LinkedIn People search results page first.');
 
-      const { history = [] } = await getStore('history');
-      const used = weeklySent(history);
-      let weeklyLeft = settings.weeklyCap - used;
-      if (weeklyLeft <= 0) throw new StopRun(`Weekly cap reached (${used}/${settings.weeklyCap} in the last 7 days). Try again later or raise the cap.`);
-
+      // No caps of our own: notes are only treated as used up once LinkedIn
+      // itself says so this month.
       let notesExhausted = false;
-      let notesLeft = Infinity;
       if (isFree && hasNote) {
         const q = await getNoteQuota();
-        notesLeft = settings.freeNotesPerMonth - notesUsedThisMonth(history);
-        if (q.reportedLeft != null) notesLeft = Math.min(notesLeft, q.reportedLeft);
-        if (q.exhausted || notesLeft <= 0) notesExhausted = true;
+        if (q.exhausted || q.reportedLeft === 0) notesExhausted = true;
         if (notesExhausted && settings.freeFallback === 'stop') {
           throw new StopRun('No personalized notes left this month. Clear the note, or choose "Send without a note" when notes run out.');
         }
@@ -774,16 +747,11 @@
             await push();
             continue;
           }
-          if (state.sent >= settings.perRunCap) { capMessage = `Per-run limit of ${settings.perRunCap} reached.`; break pages; }
-          if (weeklyLeft <= 0) { capMessage = `Weekly cap of ${settings.weeklyCap} reached.`; break pages; }
           if (isFree && hasNote && notesExhausted && settings.freeFallback === 'stop') {
             throw new StopRun('Out of personalized notes for this month. Stopped, as set in your options.');
           }
 
-          if (attempts > 0) {
-            const delay = rand(settings.minDelay * 1000, settings.maxDelay * 1000);
-            if (!(await pause(delay, 'Next invite in'))) break pages;
-          }
+          if (attempts > 0) await sleep(rand(600, 1200)); // let LinkedIn finish re-rendering
           attempts++;
 
           const picked = NOTE.pick(settings, info.name);
@@ -804,8 +772,7 @@
 
           if (res.noteLimitHit) { notesExhausted = true; await setNoteQuota({ exhausted: true, reportedLeft: 0 }); await markFreeIfUnknown(); }
           if (res.result === 'sent') {
-            state.sent++; weeklyLeft--;
-            if (res.withNote && isFree) { notesLeft--; if (notesLeft <= 0) notesExhausted = true; }
+            state.sent++;
           } else if (res.result === 'skipped') state.skipped++;
           else state.failed++;
           state.processed++;
@@ -814,15 +781,14 @@
           await addHistory({ t: Date.now(), name: info.name, url: info.url, result: res.result, detail: res.detail, withNote: !!res.withNote });
           await push();
 
+          if (/weekly invitation limit/i.test(res.detail || '')) {
+            try { await chrome.storage.local.set({ weeklyLimitHitAt: Date.now() }); } catch (_) {}
+          }
           if (res.stop) throw new StopRun(res.stop);
         }
 
         if (stopRequested) break;
-        if (page >= maxPages) { if (settings.allPages) capMessage = `Reached the ${maxPages}-page limit.`; break; }
-        if (state.sent >= settings.perRunCap) { capMessage = `Per-run limit of ${settings.perRunCap} reached.`; break; }
-        if (weeklyLeft <= 0) { capMessage = `Weekly cap of ${settings.weeklyCap} reached.`; break; }
-
-        if (!(await pause(rand(4000, 8000), 'Next page in'))) break;
+        if (!settings.allPages) break;
         state.message = 'Opening the next page…';
         await push();
         if (!(await goNextPage())) { capMessage = 'No more result pages.'; break; }

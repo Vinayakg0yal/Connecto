@@ -46,26 +46,32 @@ Nothing is clicked or sent. The first Preview may briefly open one invite box to
 
 ## 6. Send invites
 
-Click **Send invites**. You'll see **Sent / Skipped / Failed** update live, a progress bar, and a countdown to the next invite. Press **Stop** at any time; the run finishes its current step and stops.
+Click **Send invites**. You'll see **Sent / Skipped / Failed** update live, with a progress bar. Press **Stop** at any time; the run finishes its current step and stops.
+
+Connecto has no delays or caps of its own: it sends invites back to back, waiting only as long as LinkedIn's pop-ups take to appear.
 
 You can close the popup during a run. Keep the LinkedIn tab open; reopening the popup shows the current progress.
 
-## Pacing & limits
+## Continue through all results pages
 
-Open **Pacing & limits** to adjust:
+Tick **Continue through all results pages automatically** to have Connecto click **Next** after each page and keep going until there are no more results. Leave it off to process only the page you're on.
 
-| Setting | Default | Meaning |
-|---|---|---|
-| Min / Max delay (s) | 8 / 20 | Random wait between invites |
-| Max per run | 20 | Stop after this many sent in one run |
-| Weekly cap | 100 | Stop when this many have been sent in the last 7 days |
-| Free notes / month | 5 | Your Free account's note allowance |
-| Max pages | 5 | How many results pages to go through |
-| Continue to the next results pages automatically | off | Clicks **Next** and keeps going |
+## Usage & limits
 
-If LinkedIn shows its weekly invitation limit warning, the run stops immediately regardless of these settings.
+The **Usage & limits** panel is for information only. Connecto never slows down or stops because of these numbers.
 
-**Reset counters & history** clears your local history and weekly count.
+| Item | Meaning |
+|---|---|
+| Sent in the last 7 days | With a bar against LinkedIn's typical ~100/week (it turns amber near the limit and red past it). LinkedIn doesn't publish the exact number. |
+| Sent today / this month | Invites sent, from your local history |
+| Notes sent this month | Invites that included a personalized note |
+| Personalized notes left | Free accounts: exact once LinkedIn shows its "X remaining" text, otherwise an estimate. Premium: unlimited |
+| Note length limit | Read from LinkedIn's note box, or the default until it's been read |
+| Account | Free or Premium, and whether it was detected, assumed, or set manually |
+
+If LinkedIn shows its **weekly invitation limit** warning, the run stops (LinkedIn refuses every further invite at that point), and the panel shows when it happened and roughly when it should lift, usually about a week later.
+
+**Reset counters & history** clears your local history and counters.
 
 ## Activity log and export
 
@@ -73,6 +79,6 @@ The **Activity** list shows each person with their result and details. **Export 
 
 ## Tips
 
-- Keep numbers modest. Smaller daily volumes and longer delays look more natural.
+- Keep numbers modest. Connecto doesn't pace itself, so watch the weekly count in Usage & limits and stop well before ~100.
 - Narrow your search with filters so the people you invite are relevant.
 - Always run **Preview** after changing your note to check how names come out.
