@@ -6,7 +6,7 @@
 
 <p align="center">
   A Chrome extension that sends LinkedIn connection invitations, with an optional personalized note,<br>
-  to the people on your current <b>People</b> search results page, paced like a person and capped for safety.
+  to the people on your current <b>People</b> search results page.
 </p>
 
 <p align="center">
@@ -31,8 +31,10 @@ It only runs when you press a button, only on the LinkedIn tab you're looking at
 - **Live note-limit detection**: reads the real character limit from LinkedIn's note box instead of hard-coding 200/300.
 - **Short-note fallback**: if your note is too long, it uses your short version, or sends without a note. It never cuts a note off mid-sentence.
 - **Smart skipping**: pending invites, existing connections, follow-only profiles, and "email required" profiles.
-- **Safety limits**: randomized delays, a per-run cap, a weekly cap, and an automatic stop when LinkedIn shows its weekly-limit warning.
-- **Multi-page runs**: optionally clicks **Next** and continues across result pages.
+- **Fast runs**: no artificial delays or caps. It waits only as long as LinkedIn's pop-ups take to appear.
+- **Usage & limits panel**: invites sent today, this week (against LinkedIn's typical ~100/week) and this month, notes left, note length limit and account type. For information only.
+- **Weekly-limit handling**: if LinkedIn shows its weekly invitation limit warning, the run stops and the popup shows roughly when the limit should lift.
+- **Multi-page runs**: optionally clicks **Next** and keeps going until there are no more results.
 - **Live stats and activity log** (Sent / Skipped / Failed), plus **CSV export** of your history.
 
 ## Quick start
@@ -49,7 +51,7 @@ Full step-by-step instructions are in **[INSTALL.md](INSTALL.md)**.
 | Doc | What's in it |
 |---|---|
 | [INSTALL.md](INSTALL.md) | Installing, updating, pinning and uninstalling the extension |
-| [USAGE.md](USAGE.md) | Using the popup: notes, account type, pacing and limits, exporting history |
+| [USAGE.md](USAGE.md) | Using the popup: notes, account type, the Usage & limits panel, exporting history |
 | [HOW_IT_WORKS.md](HOW_IT_WORKS.md) | Architecture, the invite flow, account and limit detection, storage |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Fixing common problems, and updating `selectors.js` when LinkedIn changes its layout |
 
@@ -83,6 +85,6 @@ No data is sent anywhere. There's no server, analytics or tracking.
 
 ## ⚠️ Important
 
-LinkedIn's User Agreement prohibits automated tools that send connection requests, and accounts that use them can be warned or restricted. Connecto reduces the risk by running only when you click it, staying on one page at a time, pacing itself like a person, and capping volume, but it **cannot remove the risk**. Use modest numbers, and use it at your own risk.
+LinkedIn's User Agreement prohibits automated tools that send connection requests, and accounts that use them can be warned or restricted. Connecto only runs when you click it, but it **does not pace itself or cap volume**. Rapid, back-to-back invites are the pattern LinkedIn's automation detection looks for most, so heavy use raises the chance of a warning or restriction. Keep an eye on the Usage & limits panel, and use it at your own risk.
 
 This project is not affiliated with, endorsed by, or sponsored by LinkedIn.

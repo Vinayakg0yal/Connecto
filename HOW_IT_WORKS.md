@@ -25,8 +25,8 @@ There's no background service worker, no server and no network calls of its own.
 | `manifest.json` | Declares the popup, icons, permissions, and injects the three content scripts on `https://www.linkedin.com/*` |
 | `selectors.js` | Exposes `CONNECTO_SEL`: every LinkedIn-specific pattern (result-card containers, button labels, dialog text, pagination) |
 | `note.js` | Exposes `CONNECTO_NOTE`: name cleaning, `{firstName}` / `{name}` templating, note-length limits, choosing full / short / no note. Shared by popup and content script |
-| `content.js` | Finds result cards, classifies each person, opens invite dialogs, types notes, confirms sends, enforces caps, pages through results |
-| `popup.js` | Loads/saves settings, sends commands to the tab, renders progress from storage, exports CSV |
+| `content.js` | Finds result cards, classifies each person, opens invite dialogs, types notes, confirms sends, pages through results |
+| `popup.js` | Loads/saves settings, sends commands to the tab, renders progress and the Usage & limits panel from storage, exports CSV |
 
 ## Message flow
 
@@ -64,7 +64,7 @@ For each person who can be invited:
 1. Scroll the card into view and click **Connect**.
 2. Wait for LinkedIn's dialog (it also looks inside shadow roots, where LinkedIn sometimes renders modals).
 3. Identify the dialog:
-   - **Weekly limit warning** → close it and stop the whole run.
+   - **Weekly limit warning** → close it, save the time as `weeklyLimitHitAt`, and stop the whole run.
    - **Email required** → close it and skip this person.
    - **Out of personalized notes** (Free) → send without a note or stop, depending on your setting.
 4. Without a note: click **Send without a note** (or **Send**).
@@ -74,7 +74,7 @@ For each person who can be invited:
    - Choose the note: the full note if it fits, otherwise the short version, otherwise none.
    - Type the note the way a person would (firing the input events LinkedIn listens for), check it landed, then click **Send**.
 6. **Confirm** the card now shows **Pending**. If it doesn't, the result is still logged as sent but marked "(unverified)".
-7. Record the result in `history` and the live `run` log, then wait a random delay (default 8–20 s) before the next person.
+7. Record the result in `history` and the live `run` log, wait about a second for LinkedIn to finish re-rendering, and move to the next person. There are no other delays.
 
 ## Choosing the note
 
@@ -100,21 +100,24 @@ A note is never cut off mid-sentence. In the popup, length is checked against a 
 - on **Preview**, if it hasn't been read in the last 7 days (opens one invite box, reads the limit, closes it; nothing is sent);
 - on **every invite**, just before typing. If LinkedIn lowered the limit, Connecto switches to the short note (or no note) for that person and everyone after.
 
-**Monthly notes (Free).** Tracked from your history and from LinkedIn's "X remaining" text when it appears.
+**Monthly notes (Free).** Connecto only treats notes as used up once LinkedIn itself says so (its "out of personalized invitations" prompt, or "0 remaining"). The popup shows an estimate based on a typical 5 notes a month until LinkedIn reports the real number.
 
-## Safety limits
+## Limits
 
-| Limit | Default | Behaviour |
-|---|---|---|
-| Random delay | 8–20 s | Between invites, randomized |
-| Max per run | 20 | Run stops when reached |
-| Weekly cap | 100 | Counts invites sent in the last 7 days |
-| Max pages | 5 | Only with "Continue to the next results pages" on |
-| LinkedIn weekly-limit dialog | – | Run stops immediately |
+Connecto has **no pacing or caps of its own**. It doesn't add random delays, per-run limits or weekly caps; it waits only for LinkedIn's dialogs and re-renders.
+
+A run ends when:
+
+- every card on the page has been processed (or, with **Continue through all results pages** on, there's no **Next** page left);
+- you press **Stop**;
+- LinkedIn shows its weekly invitation limit warning;
+- a Free account is out of notes and "When notes run out" is set to **Stop the run**.
+
+The popup's **Usage & limits** panel is computed from `history` and is for information only: sent in the last 7 days (against a typical ~100/week), today and this month, notes sent and left, the note length limit, the account type, and, if the weekly warning appeared in the last 7 days, when it should lift.
 
 ## Multi-page runs
 
-With **Continue to the next results pages automatically** on, after finishing a page Connecto scrolls down, clicks LinkedIn's **Next** button, waits until the page number changes and the first result is different, pauses a moment, and continues. It stops at Max pages, the per-run cap, or the weekly cap, whichever comes first.
+With **Continue through all results pages automatically** on, after finishing a page Connecto scrolls down, clicks LinkedIn's **Next** button, waits until the page number changes and the first result is different, lets the new results render, and continues until there are no more pages.
 
 ## Storage
 
@@ -122,10 +125,11 @@ Everything lives in `chrome.storage.local` in your browser:
 
 | Key | Contents |
 |---|---|
-| `settings` | Your popup settings (note, short note, account type choice, delays, caps) |
+| `settings` | Your popup settings (note, short note, account type choice, what to do when notes run out, multi-page) |
 | `run` | Live state of the current or last run (status, counters, last 300 log lines) |
 | `history` | Every invite result with timestamp, name, profile URL, and whether a note was used (last 5,000) |
 | `noteQuota` | This month's Free note usage and whether LinkedIn said you're out |
+| `weeklyLimitHitAt` | When LinkedIn last showed its weekly invitation limit warning |
 | `detected` | Detected account type and the note limits read from LinkedIn |
 
 **Export CSV** downloads `history`. **Reset counters & history** clears it.

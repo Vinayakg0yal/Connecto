@@ -4,27 +4,23 @@ const DEFAULTS = {
   modeChoice: 'auto',
   note: '',
   freeFallback: 'withoutNote',
-  minDelay: 8,
-  maxDelay: 20,
-  perRunCap: 20,
-  weeklyCap: 100,
-  freeNotesPerMonth: 5,
   shortNote: '',
-  allPages: false,
-  maxPages: 5
+  allPages: false
 };
+const TYPICAL_WEEKLY = 100;     // LinkedIn doesn't publish it; ~100/week is typical
+const TYPICAL_FREE_NOTES = 5;   // typical Free personalized notes per month
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 const SEARCH_RE = /^https:\/\/www\.linkedin\.com\/search\/results\/people/;
 const ACTIVE = ['running', 'stopping', 'scanning'];
 const STALE_MS = 45000;
 
-const NUM_KEYS = ['minDelay', 'maxDelay', 'perRunCap', 'weeklyCap', 'freeNotesPerMonth', 'maxPages'];
 const $ = id => document.getElementById(id);
 let settings = { ...DEFAULTS };
 let run = null;
 let history = [];
 let noteQuota = null;
 let detected = null;
+let weeklyLimitHitAt = null;
 let tab = null;
 
 const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -34,9 +30,11 @@ const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() +
 init();
 
 async function init() {
-  const store = await chrome.storage.local.get(['settings', 'run', 'history', 'noteQuota', 'detected']);
+  const store = await chrome.storage.local.get(['settings', 'run', 'history', 'noteQuota', 'detected', 'weeklyLimitHitAt']);
   settings = { ...DEFAULTS, ...(store.settings || {}) };
-  delete settings.mode; // older versions stored a manual mode; Auto is now the default
+  // Drop settings from older versions (manual mode, pacing and caps).
+  for (const k of ['mode', 'minDelay', 'maxDelay', 'perRunCap', 'weeklyCap', 'freeNotesPerMonth', 'maxPages']) delete settings[k];
+  weeklyLimitHitAt = store.weeklyLimitHitAt || null;
   detected = store.detected || null;
   run = store.run || null;
   history = store.history || [];
@@ -54,6 +52,7 @@ async function init() {
     if (changes.history) history = changes.history.newValue || [];
     if (changes.noteQuota) noteQuota = changes.noteQuota.newValue || null;
     if (changes.detected) detected = changes.detected.newValue || null;
+    if (changes.weeklyLimitHitAt) weeklyLimitHitAt = changes.weeklyLimitHitAt.newValue || null;
     renderAll();
   });
   // Re-render every few seconds so a stalled run is detected.
@@ -70,7 +69,6 @@ function fillForm() {
   $('shortNote').value = settings.shortNote;
   $('allPages').checked = settings.allPages;
   $('fallback').value = settings.freeFallback;
-  for (const k of NUM_KEYS) $(k).value = settings[k];
 }
 
 let saveTimer;
@@ -100,15 +98,6 @@ function bind() {
   $('allPages').addEventListener('change', () => { settings.allPages = $('allPages').checked; save(); });
   $('fallback').addEventListener('change', () => { settings.freeFallback = $('fallback').value; save(); });
 
-  for (const k of NUM_KEYS) {
-    $(k).addEventListener('change', () => {
-      const v = parseInt($(k).value, 10);
-      const min = parseInt($(k).min, 10), max = parseInt($(k).max, 10);
-      settings[k] = Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : DEFAULTS[k];
-      $(k).value = settings[k];
-      save(); renderAll();
-    });
-  }
 
   $('startBtn').addEventListener('click', () => begin('START'));
   $('scanBtn').addEventListener('click', () => begin('SCAN'));
@@ -116,7 +105,7 @@ function bind() {
   $('exportBtn').addEventListener('click', exportCsv);
   $('clearHistory').addEventListener('click', async () => {
     if (!confirm('Reset the weekly and monthly counters and delete the activity history stored by this extension?')) return;
-    await chrome.storage.local.remove(['history', 'noteQuota', 'run']);
+    await chrome.storage.local.remove(['history', 'noteQuota', 'run', 'weeklyLimitHitAt']);
   });
 }
 
@@ -135,12 +124,12 @@ function weeklySent() {
 function freeNotesLeft() {
   const m = monthKey();
   const used = history.filter(h => h.result === 'sent' && h.withNote && monthKey(new Date(h.t)) === m).length;
-  let left = settings.freeNotesPerMonth - used;
+  // Exact when LinkedIn has told us; otherwise an estimate (null = unknown).
   if (noteQuota && noteQuota.month === m) {
-    if (noteQuota.exhausted) left = 0;
-    else if (noteQuota.reportedLeft != null) left = Math.min(left, noteQuota.reportedLeft);
+    if (noteQuota.exhausted) return { left: 0, exact: true };
+    if (noteQuota.reportedLeft != null) return { left: noteQuota.reportedLeft, exact: true };
   }
-  return Math.max(0, left);
+  return { left: Math.max(0, TYPICAL_FREE_NOTES - used), exact: false };
 }
 function isActive() {
   return !!run && ACTIVE.includes(run.status) && Date.now() - (run.heartbeat || 0) < STALE_MS;
@@ -188,8 +177,6 @@ function renderMode() {
     ? `Notes up to ${limit} characters (${limitSrc}). Free accounts only get a few personalized notes a month; after that, invites go out without a note, or the run stops. You choose below.`
     : `Notes up to ${limit} characters (${limitSrc}). No monthly note cap. LinkedIn's weekly invitation limit still applies.`);
   $('freeBox').hidden = !free;
-  $('freeNotesWrap').hidden = !free;
-  $('notesLeft').textContent = `${freeNotesLeft()} of ${settings.freeNotesPerMonth}`;
 }
 
 function setCount(el, text) {
@@ -239,7 +226,7 @@ function renderRun() {
   $('progressText').textContent = r.total
     ? `${r.processed || 0} of ${r.total} profiles${r.page > 1 ? ` · page ${r.page}` : ''}${r.dryRun ? ` · ${r.ready || 0} ready` : ''}`
     : 'Ready';
-  $('weekText').textContent = `This week: ${weeklySent()} / ${settings.weeklyCap}`;
+  $('weekText').textContent = `This week: ${weeklySent()} sent`;
 
   let msg = r.message || '';
   const stale = run && ACTIVE.includes(run.status) && !active;
@@ -257,7 +244,44 @@ function renderRun() {
   $('scanBtn').disabled = !onSearch;
 
   renderLog(r.log || []);
-  $('notesLeft').textContent = `${freeNotesLeft()} of ${settings.freeNotesPerMonth}`;
+  renderUsage();
+}
+
+function renderUsage() {
+  const now = Date.now();
+  const sent = history.filter(h => h.result === 'sent');
+  const week = sent.filter(h => h.t >= now - WEEK).length;
+  const today = sent.filter(h => new Date(h.t).toDateString() === new Date().toDateString()).length;
+  const m = monthKey();
+  const month = sent.filter(h => monthKey(new Date(h.t)) === m);
+  const notes = month.filter(h => h.withNote).length;
+
+  $('uWeek').textContent = week;
+  const bar = $('uWeekBar');
+  bar.style.width = Math.min(100, Math.round((week / TYPICAL_WEEKLY) * 100)) + '%';
+  bar.className = week >= TYPICAL_WEEKLY ? 'over' : week >= TYPICAL_WEEKLY * 0.8 ? 'high' : '';
+  $('uToday').textContent = today;
+  $('uMonth').textContent = month.length;
+  $('uNotes').textContent = notes;
+
+  const mode = effMode();
+  if (mode === 'premium') $('uNotesLeft').textContent = 'Unlimited';
+  else {
+    const nl = freeNotesLeft();
+    $('uNotesLeft').textContent = nl.exact ? `${nl.left} (from LinkedIn)` : `~${nl.left} (est.)`;
+  }
+  const lim = detected && detected.limits && detected.limits[mode];
+  $('uNoteLen').textContent = `${limitNow()} chars${lim && lim.seenAt ? '' : ' (default)'}`;
+  const known = detected && detected.premium !== null && detected.premium !== undefined;
+  $('uAccount').textContent = (mode === 'premium' ? 'Premium' : 'Free') +
+    (settings.modeChoice === 'auto' ? (known ? ' (detected)' : ' (assumed)') : ' (manual)');
+
+  const hit = $('uWeeklyHit');
+  if (weeklyLimitHitAt && now - weeklyLimitHitAt < WEEK) {
+    hit.hidden = false;
+    hit.textContent = `LinkedIn showed its weekly-limit warning on ${fmtDate(weeklyLimitHitAt)}. ` +
+      `It usually lifts about a week later (around ${fmtDate(weeklyLimitHitAt + WEEK)}). Until then LinkedIn will refuse new invites.`;
+  } else hit.hidden = true;
 }
 
 let lastLogKey = '';
@@ -310,10 +334,9 @@ async function ensureContentScript() {
 async function begin(type) {
   [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !SEARCH_RE.test(tab.url || '')) { renderBanner(); return say('Open a LinkedIn People search results page first.'); }
-  if (settings.minDelay > settings.maxDelay) return say('Min delay must be less than or equal to max delay.');
   if (type === 'START') {
-    if (weeklySent() >= settings.weeklyCap) return say(`Weekly cap reached (${weeklySent()}/${settings.weeklyCap}).`);
-    if (effMode() === 'free' && (settings.note.trim() || settings.shortNote.trim()) && freeNotesLeft() <= 0 && settings.freeFallback === 'stop') {
+    const nl = freeNotesLeft();
+    if (effMode() === 'free' && (settings.note.trim() || settings.shortNote.trim()) && nl.exact && nl.left <= 0 && settings.freeFallback === 'stop') {
       return say('No personalized notes left this month. Clear the note or switch "When notes run out" to "Send without a note".');
     }
   }
