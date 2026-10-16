@@ -1,0 +1,354 @@
+/* Connecto popup. Settings + controls; live progress comes from chrome.storage ("run"). */
+const NOTE = globalThis.CONNECTO_NOTE;
+const DEFAULTS = {
+  modeChoice: 'auto',
+  note: '',
+  freeFallback: 'withoutNote',
+  minDelay: 8,
+  maxDelay: 20,
+  perRunCap: 20,
+  weeklyCap: 100,
+  freeNotesPerMonth: 5,
+  shortNote: '',
+  allPages: false,
+  maxPages: 5
+};
+const WEEK = 7 * 24 * 60 * 60 * 1000;
+const SEARCH_RE = /^https:\/\/www\.linkedin\.com\/search\/results\/people/;
+const ACTIVE = ['running', 'stopping', 'scanning'];
+const STALE_MS = 45000;
+
+const NUM_KEYS = ['minDelay', 'maxDelay', 'perRunCap', 'weeklyCap', 'freeNotesPerMonth', 'maxPages'];
+const $ = id => document.getElementById(id);
+let settings = { ...DEFAULTS };
+let run = null;
+let history = [];
+let noteQuota = null;
+let detected = null;
+let tab = null;
+
+const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+/* ---------------- init ---------------- */
+
+init();
+
+async function init() {
+  const store = await chrome.storage.local.get(['settings', 'run', 'history', 'noteQuota', 'detected']);
+  settings = { ...DEFAULTS, ...(store.settings || {}) };
+  delete settings.mode; // older versions stored a manual mode; Auto is now the default
+  detected = store.detected || null;
+  run = store.run || null;
+  history = store.history || [];
+  noteQuota = store.noteQuota || null;
+
+  [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  fillForm();
+  bind();
+  renderAll();
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    if (changes.run) run = changes.run.newValue || null;
+    if (changes.history) history = changes.history.newValue || [];
+    if (changes.noteQuota) noteQuota = changes.noteQuota.newValue || null;
+    if (changes.detected) detected = changes.detected.newValue || null;
+    renderAll();
+  });
+  // Re-render every few seconds so a stalled run is detected.
+  setInterval(renderRun, 3000);
+
+  // Ask the LinkedIn tab to (re)check the account type in the background.
+  if (tab && /^https:\/\/www\.linkedin\.com\//.test(tab.url || '')) {
+    ensureContentScript().then(() => chrome.tabs.sendMessage(tab.id, { type: 'DETECT', force: true })).catch(() => {});
+  }
+}
+
+function fillForm() {
+  $('note').value = settings.note;
+  $('shortNote').value = settings.shortNote;
+  $('allPages').checked = settings.allPages;
+  $('fallback').value = settings.freeFallback;
+  for (const k of NUM_KEYS) $(k).value = settings[k];
+}
+
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => chrome.storage.local.set({ settings }), 250);
+}
+
+function bind() {
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    settings.modeChoice = b.dataset.mode;
+    save(); renderAll();
+  }));
+
+  $('note').addEventListener('input', () => { settings.note = $('note').value; save(); renderNote(); });
+
+  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+    const ta = $('note');
+    const s = ta.selectionStart ?? ta.value.length, e = ta.selectionEnd ?? ta.value.length;
+    ta.value = ta.value.slice(0, s) + c.dataset.insert + ta.value.slice(e);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = s + c.dataset.insert.length;
+    settings.note = ta.value; save(); renderNote();
+  }));
+
+  $('shortNote').addEventListener('input', () => { settings.shortNote = $('shortNote').value; save(); renderNote(); });
+  $('allPages').addEventListener('change', () => { settings.allPages = $('allPages').checked; save(); });
+  $('fallback').addEventListener('change', () => { settings.freeFallback = $('fallback').value; save(); });
+
+  for (const k of NUM_KEYS) {
+    $(k).addEventListener('change', () => {
+      const v = parseInt($(k).value, 10);
+      const min = parseInt($(k).min, 10), max = parseInt($(k).max, 10);
+      settings[k] = Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : DEFAULTS[k];
+      $(k).value = settings[k];
+      save(); renderAll();
+    });
+  }
+
+  $('startBtn').addEventListener('click', () => begin('START'));
+  $('scanBtn').addEventListener('click', () => begin('SCAN'));
+  $('stopBtn').addEventListener('click', stop);
+  $('exportBtn').addEventListener('click', exportCsv);
+  $('clearHistory').addEventListener('click', async () => {
+    if (!confirm('Reset the weekly and monthly counters and delete the activity history stored by this extension?')) return;
+    await chrome.storage.local.remove(['history', 'noteQuota', 'run']);
+  });
+}
+
+/* ---------------- account type & limits ---------------- */
+
+const effMode = () => NOTE.effectiveMode(settings, detected);
+const limitNow = () => NOTE.limitFor(effMode(), detected);
+const fmtDate = t => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+/* ---------------- counters ---------------- */
+
+function weeklySent() {
+  const since = Date.now() - WEEK;
+  return history.filter(h => h.result === 'sent' && h.t >= since).length;
+}
+function freeNotesLeft() {
+  const m = monthKey();
+  const used = history.filter(h => h.result === 'sent' && h.withNote && monthKey(new Date(h.t)) === m).length;
+  let left = settings.freeNotesPerMonth - used;
+  if (noteQuota && noteQuota.month === m) {
+    if (noteQuota.exhausted) left = 0;
+    else if (noteQuota.reportedLeft != null) left = Math.min(left, noteQuota.reportedLeft);
+  }
+  return Math.max(0, left);
+}
+function isActive() {
+  return !!run && ACTIVE.includes(run.status) && Date.now() - (run.heartbeat || 0) < STALE_MS;
+}
+
+/* ---------------- rendering ---------------- */
+
+function renderAll() {
+  renderMode();
+  renderNote();
+  renderBanner();
+  renderRun();
+}
+
+function renderMode() {
+  document.querySelectorAll('.seg button').forEach(b =>
+    b.setAttribute('aria-checked', String(b.dataset.mode === settings.modeChoice)));
+  const mode = effMode();
+  const free = mode === 'free';
+  const limit = limitNow();
+  const lim = detected && detected.limits && detected.limits[mode];
+
+  // Detection status line.
+  const line = $('detectLine');
+  line.textContent = '';
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  const txt = document.createElement('span');
+  const known = detected && detected.premium !== null && detected.premium !== undefined;
+  const detectedName = known ? (detected.premium ? 'Premium' : 'Free') : null;
+  if (settings.modeChoice === 'auto') {
+    if (known) { dot.classList.add('on'); txt.textContent = `Detected: ${detectedName} account`; }
+    else { dot.classList.add('warn'); txt.textContent = 'Not detected yet. Using Free until LinkedIn is open and signed in.'; }
+  } else if (known && detectedName.toLowerCase() !== settings.modeChoice) {
+    dot.classList.add('warn');
+    txt.textContent = `LinkedIn shows a ${detectedName} account. Switch to Auto to follow it.`;
+  } else {
+    dot.classList.add('on');
+    txt.textContent = `Using ${free ? 'Free' : 'Premium'} (set manually)`;
+  }
+  line.append(dot, txt);
+
+  const limitSrc = lim && lim.seenAt ? `read from LinkedIn on ${fmtDate(lim.seenAt)}` : 'LinkedIn\'s usual limit; checked automatically on Preview and while sending';
+  $('modeHint').textContent = (free
+    ? `Notes up to ${limit} characters (${limitSrc}). Free accounts only get a few personalized notes a month; after that, invites go out without a note, or the run stops. You choose below.`
+    : `Notes up to ${limit} characters (${limitSrc}). No monthly note cap. LinkedIn's weekly invitation limit still applies.`);
+  $('freeBox').hidden = !free;
+  $('freeNotesWrap').hidden = !free;
+  $('notesLeft').textContent = `${freeNotesLeft()} of ${settings.freeNotesPerMonth}`;
+}
+
+function setCount(el, text) {
+  const limit = limitNow();
+  const len = NOTE.previewLength(text);
+  el.textContent = `${len} / ${limit}`;
+  el.classList.toggle('over', len > limit);
+  el.title = /\{/.test(text) ? 'Counted with a long sample name filled in' : '';
+  return len > limit;
+}
+
+function renderNote() {
+  const mainOver = setCount($('charCount'), settings.note);
+  const shortOver = setCount($('shortCount'), settings.shortNote);
+  const limit = limitNow();
+  $('shortBox').hidden = !mainOver && !settings.shortNote.trim();
+  const hint = $('lengthHint');
+  hint.hidden = !mainOver;
+  if (mainOver) {
+    const hasShort = settings.shortNote.trim() && !shortOver;
+    hint.textContent = `Your note is over ${limit} characters` +
+      (effMode() === 'free' ? ` (the Free limit; Premium allows ${NOTE.limitFor('premium', detected)})` : '') + '. ' +
+      (hasShort ? 'The short version below will be used instead.'
+                : 'Add a short version below, or invites will go out without a note.');
+  }
+}
+
+function renderBanner() {
+  const b = $('pageBanner');
+  const onSearch = tab && SEARCH_RE.test(tab.url || '');
+  if (onSearch) { b.hidden = true; return; }
+  b.hidden = false;
+  b.textContent = 'Open a LinkedIn People search (Search → People) in this tab, then reopen this popup.';
+}
+
+function renderRun() {
+  const active = isActive();
+  const r = run || {};
+  const onSearch = tab && SEARCH_RE.test(tab.url || '');
+
+  $('sSent').textContent = r.dryRun ? 0 : (r.sent || 0);
+  $('sSkipped').textContent = r.skipped || 0;
+  $('sFailed').textContent = r.failed || 0;
+
+  const pct = r.total ? Math.round(((r.processed || 0) / r.total) * 100) : 0;
+  $('bar').style.width = pct + '%';
+  $('progressText').textContent = r.total
+    ? `${r.processed || 0} of ${r.total} profiles${r.page > 1 ? ` · page ${r.page}` : ''}${r.dryRun ? ` · ${r.ready || 0} ready` : ''}`
+    : 'Ready';
+  $('weekText').textContent = `This week: ${weeklySent()} / ${settings.weeklyCap}`;
+
+  let msg = r.message || '';
+  const stale = run && ACTIVE.includes(run.status) && !active;
+  if (stale) msg = 'The last run was interrupted (the tab was closed, reloaded, or navigated away).';
+  const m = $('message');
+  m.textContent = msg;
+  m.classList.toggle('error', r.status === 'error' || r.status === 'stopped' && /limit|out of|no personalized/i.test(msg));
+
+  $('startBtn').hidden = active;
+  $('scanBtn').hidden = active;
+  $('stopBtn').hidden = !active;
+  $('stopBtn').disabled = r.status === 'stopping';
+  $('stopBtn').textContent = r.status === 'stopping' ? 'Stopping…' : 'Stop';
+  $('startBtn').disabled = !onSearch;
+  $('scanBtn').disabled = !onSearch;
+
+  renderLog(r.log || []);
+  $('notesLeft').textContent = `${freeNotesLeft()} of ${settings.freeNotesPerMonth}`;
+}
+
+let lastLogKey = '';
+function renderLog(log) {
+  const key = log.length + ':' + (log.length ? log[log.length - 1].t : 0);
+  if (key === lastLogKey) return;
+  lastLogKey = key;
+  const ol = $('log');
+  ol.textContent = '';
+  if (!log.length) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'Nothing yet. Open a People search, then press Preview or Send invites.';
+    ol.append(li);
+    return;
+  }
+  for (const e of [...log].reverse()) {
+    const li = document.createElement('li');
+    const a = document.createElement(e.url ? 'a' : 'span');
+    a.textContent = e.name;
+    if (e.url) { a.href = e.url; a.target = '_blank'; a.rel = 'noopener'; }
+    const tag = document.createElement('span');
+    tag.className = 'tag ' + e.result;
+    tag.textContent = e.result;
+    const d = document.createElement('span');
+    d.className = 'detail';
+    d.textContent = e.detail || '';
+    li.append(a, tag, d);
+    ol.append(li);
+  }
+}
+
+/* ---------------- actions ---------------- */
+
+function say(text, isError = true) {
+  const m = $('message');
+  m.textContent = text;
+  m.classList.toggle('error', isError);
+}
+
+async function ensureContentScript() {
+  try {
+    const r = await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
+    if (r && r.ok) return r;
+  } catch (_) { /* not injected yet */ }
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['selectors.js', 'note.js', 'content.js'] });
+  return chrome.tabs.sendMessage(tab.id, { type: 'PING' });
+}
+
+async function begin(type) {
+  [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab || !SEARCH_RE.test(tab.url || '')) { renderBanner(); return say('Open a LinkedIn People search results page first.'); }
+  if (settings.minDelay > settings.maxDelay) return say('Min delay must be less than or equal to max delay.');
+  if (type === 'START') {
+    if (weeklySent() >= settings.weeklyCap) return say(`Weekly cap reached (${weeklySent()}/${settings.weeklyCap}).`);
+    if (effMode() === 'free' && (settings.note.trim() || settings.shortNote.trim()) && freeNotesLeft() <= 0 && settings.freeFallback === 'stop') {
+      return say('No personalized notes left this month. Clear the note or switch "When notes run out" to "Send without a note".');
+    }
+  }
+  try {
+    const ping = await ensureContentScript();
+    if (ping && ping.busy) return say('A run is already in progress in this tab.');
+    await chrome.storage.local.set({ runTabId: tab.id });
+    const r = await chrome.tabs.sendMessage(tab.id, { type, settings: { ...settings } });
+    if (r && !r.ok) say(r.error || 'Could not start.');
+    else say(type === 'SCAN' ? 'Scanning…' : 'Starting…', false);
+  } catch (e) {
+    say('Could not reach the page. Reload the LinkedIn tab and try again.');
+  }
+}
+
+async function stop() {
+  const { runTabId } = await chrome.storage.local.get('runTabId');
+  $('stopBtn').disabled = true;
+  $('stopBtn').textContent = 'Stopping…';
+  try { await chrome.tabs.sendMessage(runTabId ?? tab.id, { type: 'STOP' }); }
+  catch (_) {
+    // Tab is gone; mark the run as stopped so the UI recovers.
+    await chrome.storage.local.set({ run: { ...(run || {}), status: 'stopped', message: 'Stopped.' } });
+  }
+}
+
+function exportCsv() {
+  if (!history.length) return say('No history to export yet.', false);
+  const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [['Date', 'Name', 'Profile URL', 'Result', 'Detail', 'With note']];
+  for (const h of history) rows.push([new Date(h.t).toISOString(), h.name, h.url, h.result, h.detail, h.withNote ? 'yes' : 'no']);
+  const blob = new Blob([rows.map(r => r.map(esc).join(',')).join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `connecto-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
