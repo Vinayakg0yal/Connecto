@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Connecto</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="top">
+    <img src="icons/icon32.png" alt="" width="24" height="24">
+    <div class="brand">
+      <h1>Connecto</h1>
+      <p>Invite the people on this results page</p>
+    </div>
+  </header>
+
+  <div id="pageBanner" class="banner" hidden></div>
+
+  <section class="block">
+    <div class="row">
+      <span class="label">Account type</span>
+      <div class="seg" role="radiogroup" aria-label="Account type">
+        <button type="button" role="radio" data-mode="auto">Auto</button>
+        <button type="button" role="radio" data-mode="free">Free</button>
+        <button type="button" role="radio" data-mode="premium">Premium</button>
+      </div>
+    </div>
+    <p id="detectLine" class="detect"></p>
+    <p id="modeHint" class="hint"></p>
+  </section>
+
+  <section class="block">
+    <label class="label" for="note">Connection note <span class="muted">optional</span></label>
+    <textarea id="note" rows="5" spellcheck="true"
+      placeholder="Hi {firstName}, I'm a software developer in Toronto exploring new roles and would love to connect."></textarea>
+    <div class="row small">
+      <div class="chips">
+        <button type="button" class="chip" data-insert="{firstName}">+ First name</button>
+        <button type="button" class="chip" data-insert="{name}">+ Full name</button>
+      </div>
+      <span id="charCount" class="count">0 / 200</span>
+    </div>
+
+    <div id="shortBox" class="shortbox" hidden>
+      <p id="lengthHint" class="warn"></p>
+      <label class="label" for="shortNote">Short version <span class="muted">used when the full note doesn't fit</span></label>
+      <textarea id="shortNote" rows="3" spellcheck="true"
+        placeholder="Hi {firstName}, I'm a developer in Toronto looking for my next role. Would love to connect!"></textarea>
+      <div class="row small"><span></span><span id="shortCount" class="count">0 / 200</span></div>
+    </div>
+
+    <div id="freeBox" class="freebox">
+      <div class="row small">
+        <span>Notes left this month</span>
+        <strong id="notesLeft">–</strong>
+      </div>
+      <label class="row small" for="fallback">
+        <span>When notes run out</span>
+        <select id="fallback">
+          <option value="withoutNote">Send without a note</option>
+          <option value="stop">Stop the run</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <details class="block" id="limits">
+    <summary>Pacing &amp; limits</summary>
+    <div class="grid">
+      <label>Min delay (s)<input type="number" id="minDelay" min="3" max="300"></label>
+      <label>Max delay (s)<input type="number" id="maxDelay" min="3" max="600"></label>
+      <label>Max per run<input type="number" id="perRunCap" min="1" max="100"></label>
+      <label>Weekly cap<input type="number" id="weeklyCap" min="1" max="300"></label>
+      <label id="freeNotesWrap">Free notes / month<input type="number" id="freeNotesPerMonth" min="0" max="50"></label>
+      <label>Max pages<input type="number" id="maxPages" min="1" max="20"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="allPages"> Continue to the next results pages automatically</label>
+    <p class="hint">Delays are randomized between min and max. The weekly cap counts invites sent in the last 7 days.</p>
+    <button type="button" id="clearHistory" class="link danger">Reset counters &amp; history</button>
+  </details>
+
+  <section class="block run">
+    <div class="stats">
+      <div class="stat ok"><span id="sSent">0</span><small>Sent</small></div>
+      <div class="stat"><span id="sSkipped">0</span><small>Skipped</small></div>
+      <div class="stat bad"><span id="sFailed">0</span><small>Failed</small></div>
+    </div>
+    <div class="progress" aria-hidden="true"><div id="bar"></div></div>
+    <div class="row small muted">
+      <span id="progressText">Ready</span>
+      <span id="weekText"></span>
+    </div>
+    <p id="message" class="message"></p>
+    <div class="actions">
+      <button type="button" id="scanBtn" class="btn secondary">Preview</button>
+      <button type="button" id="startBtn" class="btn primary">Send invites</button>
+      <button type="button" id="stopBtn" class="btn stop" hidden>Stop</button>
+    </div>
+  </section>
+
+  <section class="block log">
+    <div class="row">
+      <span class="label">Activity</span>
+      <button type="button" id="exportBtn" class="link">Export CSV</button>
+    </div>
+    <ol id="log"><li class="empty">Nothing yet. Open a People search, then press Preview or Send invites.</li></ol>
+  </section>
+
+  <script src="note.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
