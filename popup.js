@@ -18,6 +18,26 @@ const ACTIVE = ['running', 'stopping', 'scanning'];
 const STALE_MS = 45000;
 
 const $ = id => document.getElementById(id);
+
+// Ready-made notes. Each has a short version (fits Free's 200) and a long one (fits Premium's 300).
+const TEMPLATES = [
+  { id: 'job', label: 'Job hunt',
+    short: "Hi {firstName}, I'm exploring new roles and admire the work your team does. I'd love to connect and hear about any openings that might fit my background. Thank you!",
+    long: "Hi {firstName}, I'm currently exploring new opportunities and really admire the work your team is doing. I'd love to connect and learn more about the team, and about any openings that might fit my background. I'd be grateful for any advice. Thank you for your time!" },
+  { id: 'cold', label: 'Cold',
+    short: "Hi {firstName}, I came across your profile and liked what you're working on. I'd love to connect and exchange ideas. Looking forward to staying in touch!",
+    long: "Hi {firstName}, I came across your profile and really liked what you're working on. I'm always keen to learn from people in the field, so I'd love to connect and exchange ideas when you have a moment. Looking forward to staying in touch!" },
+  { id: 'recruiter', label: 'Recruiter',
+    short: "Hi {firstName}, I see you recruit in my field. I'm open to new opportunities and would love to connect in case a role comes up that fits my experience. Thanks!",
+    long: "Hi {firstName}, I noticed you recruit for roles in my field. I'm open to new opportunities and would love to connect so you can keep me in mind if something fits my experience. Happy to share my resume anytime. Thanks so much!" },
+  { id: 'referral', label: 'Referral',
+    short: "Hi {firstName}, I'm interested in roles at your company and would really value your perspective on the team. Would you be open to connecting? Thank you!",
+    long: "Hi {firstName}, I'm very interested in joining your company and would really value an insider's perspective on the team and culture. Would you be open to connecting, and maybe a quick chat sometime? I'd be grateful for any advice. Thank you!" },
+  { id: 'network', label: 'Network',
+    short: "Hi {firstName}, we work in the same space and I'd love to grow my network with people like you. Happy to connect!",
+    long: "Hi {firstName}, we work in the same space and I enjoy connecting with people who share that interest. I'd love to add you to my network, swap ideas now and then, and help out where I can. Happy to connect!" }
+];
+
 let settings = { ...DEFAULTS };
 let run = null;
 let history = [];
@@ -104,7 +124,7 @@ function bind() {
 
   $('note').addEventListener('input', () => { settings.note = $('note').value; save(); renderNote(); });
 
-  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('.chip[data-insert]').forEach(c => c.addEventListener('click', () => {
     const ta = $('note');
     const s = ta.selectionStart ?? ta.value.length, e = ta.selectionEnd ?? ta.value.length;
     ta.value = ta.value.slice(0, s) + c.dataset.insert + ta.value.slice(e);
@@ -112,6 +132,20 @@ function bind() {
     ta.selectionStart = ta.selectionEnd = s + c.dataset.insert.length;
     settings.note = ta.value; save(); renderNote();
   }));
+
+  // Templates: one compact row of pills under the note.
+  const row = $('tplRow');
+  for (const t of TEMPLATES) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tpl'; b.dataset.tpl = t.id; b.textContent = t.label;
+    b.addEventListener('click', () => useTemplate(t));
+    row.append(b);
+  }
+  $('tplToggle').addEventListener('click', () => {
+    const open = row.hidden;
+    row.hidden = !open;
+    $('tplToggle').setAttribute('aria-expanded', String(open));
+  });
 
   $('shortNote').addEventListener('input', () => { settings.shortNote = $('shortNote').value; save(); renderNote(); });
   $('fallback').addEventListener('change', () => { settings.freeFallback = $('fallback').value; save(); });
@@ -125,6 +159,20 @@ function bind() {
     if (!confirm('Reset the weekly and monthly counters and delete the activity history stored by this extension?')) return;
     await chrome.storage.local.remove(['history', 'noteQuota', 'run', 'weeklyLimitHitAt', 'weeklyLimitHow']);
   });
+}
+
+// Fills the note with a template: the long version if it fits the current
+// limit, otherwise the short one. Asks before replacing a note you wrote.
+function useTemplate(t) {
+  const ta = $('note');
+  const current = ta.value.trim();
+  const isTemplate = TEMPLATES.some(x => x.short === current || x.long === current);
+  if (current && !isTemplate && !confirm('Replace your note with the "' + t.label + '" template?')) return;
+  const text = NOTE.previewLength(t.long) <= limitNow() ? t.long : t.short;
+  ta.value = text;
+  settings.note = text; save(); renderNote();
+  document.querySelectorAll('#tplRow .tpl').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tpl === t.id)));
+  ta.scrollTop = 0;
 }
 
 /* ---------------- account type & limits ---------------- */
@@ -179,9 +227,8 @@ function renderRunMode() {
   const S = MODES.SAFE, c = safeCaps();
   const acct = effMode() === 'premium' ? 'Premium' : 'Free';
   $('runHint').textContent = rm === 'safe'
-    ? `Follows LinkedIn's pace: ${S.inviteDelay[0]}–${S.inviteDelay[1]} s between invites, a ${S.breakDelay[0] / 60}–${S.breakDelay[1] / 60} min break every ${S.breakEvery}, ` +
-      `and stops at ${c.day} a day / ${c.week} a week (${acct}). Moves to the next page on its own.`
-    : 'No delays, no limits. Moves to the next page on its own and keeps going until LinkedIn\'s weekly limit stops it.';
+    ? `Paced like a person, with ${S.inviteDelay[0]}–${S.inviteDelay[1]} s between invites. Stops at ${c.day} a day and ${c.week} a week (${acct}).`
+    : 'No delays and no limits. Runs until LinkedIn stops it.';
   $('crazyWarn').hidden = rm !== 'crazy';
   document.body.classList.toggle('crazy', rm === 'crazy');
 }
@@ -217,8 +264,9 @@ function renderMode() {
 
   const limitSrc = lim && lim.seenAt ? `read from LinkedIn on ${fmtDate(lim.seenAt)}` : 'LinkedIn\'s usual limit; checked automatically on Preview and while sending';
   $('modeHint').textContent = (free
-    ? `Notes up to ${limit} characters (${limitSrc}). Free accounts only get a few personalized notes a month; after that, invites go out without a note, or the run stops. You choose below.`
-    : `Notes up to ${limit} characters (${limitSrc}). No monthly note cap. LinkedIn's weekly invitation limit still applies.`);
+    ? `Notes up to ${limit} characters. Free accounts get a few personalized notes a month.`
+    : `Notes up to ${limit} characters, no monthly cap.`);
+  $('modeHint').title = limitSrc;
   $('freeBox').hidden = !free;
 }
 
@@ -351,6 +399,7 @@ function renderLog(log) {
   lastLogKey = key;
   const ol = $('log');
   ol.textContent = '';
+  $('logCount').textContent = log.length ? String(log.length) : '';
   if (!log.length) {
     const li = document.createElement('li');
     li.className = 'empty';

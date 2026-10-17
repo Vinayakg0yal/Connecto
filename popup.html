@@ -63,7 +63,12 @@
     <div class="chips">
       <button type="button" class="chip" data-insert="{firstName}">+ First name</button>
       <button type="button" class="chip" data-insert="{name}">+ Full name</button>
+      <button type="button" id="tplToggle" class="chip tpl-toggle" aria-expanded="false" aria-controls="tplRow">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3z"/><path d="M18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2z"/></svg>
+        Templates
+      </button>
     </div>
+    <div id="tplRow" class="tpl-row" role="group" aria-label="Message templates" hidden></div>
 
     <div id="shortBox" class="shortbox" hidden>
       <p id="lengthHint" class="warn"></p>
@@ -107,7 +112,7 @@
   </section>
 
   <!-- Usage -->
-  <details class="sec usage" id="usage">
+  <details class="sec fold usage" id="usage">
     <summary>
       <span>Usage &amp; limits</span>
       <span class="sum-right"><span id="uWeek">0</span><span class="muted" id="uWeekCap">/ ~100</span> this week</span>
@@ -128,13 +133,14 @@
   </details>
 
   <!-- Activity -->
-  <section class="sec log">
-    <div class="row">
-      <span class="label">Activity</span>
-      <button type="button" id="exportBtn" class="link">Export CSV</button>
-    </div>
+  <details class="sec fold log" id="activity">
+    <summary>
+      <span>Activity</span>
+      <span class="sum-right"><span id="logCount" class="pill-count"></span></span>
+    </summary>
     <ol id="log"><li class="empty">Nothing yet. Open a People search, then press Preview or Send invites.</li></ol>
-  </section>
+    <button type="button" id="exportBtn" class="link">Export CSV</button>
+  </details>
 
   <script src="note.js"></script>
   <script src="popup.js"></script>
