@@ -22,6 +22,7 @@ let history = [];
 let noteQuota = null;
 let detected = null;
 let weeklyLimitHitAt = null;
+let weeklyLimitHow = null;
 let tab = null;
 
 const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -31,11 +32,12 @@ const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() +
 init();
 
 async function init() {
-  const store = await chrome.storage.local.get(['settings', 'run', 'history', 'noteQuota', 'detected', 'weeklyLimitHitAt']);
+  const store = await chrome.storage.local.get(['settings', 'run', 'history', 'noteQuota', 'detected', 'weeklyLimitHitAt', 'weeklyLimitHow']);
   settings = { ...DEFAULTS, ...(store.settings || {}) };
   // Drop settings from older versions (manual mode, pacing and caps).
   for (const k of ['mode', 'allPages', 'minDelay', 'maxDelay', 'perRunCap', 'weeklyCap', 'freeNotesPerMonth', 'maxPages']) delete settings[k];
   weeklyLimitHitAt = store.weeklyLimitHitAt || null;
+  weeklyLimitHow = store.weeklyLimitHow || null;
   detected = store.detected || null;
   run = store.run || null;
   history = store.history || [];
@@ -54,6 +56,7 @@ async function init() {
     if (changes.noteQuota) noteQuota = changes.noteQuota.newValue || null;
     if (changes.detected) detected = changes.detected.newValue || null;
     if (changes.weeklyLimitHitAt) weeklyLimitHitAt = changes.weeklyLimitHitAt.newValue || null;
+    if (changes.weeklyLimitHow) weeklyLimitHow = changes.weeklyLimitHow.newValue || null;
     renderAll();
   });
   // Re-render every few seconds so a stalled run is detected.
@@ -106,7 +109,7 @@ function bind() {
   $('exportBtn').addEventListener('click', exportCsv);
   $('clearHistory').addEventListener('click', async () => {
     if (!confirm('Reset the weekly and monthly counters and delete the activity history stored by this extension?')) return;
-    await chrome.storage.local.remove(['history', 'noteQuota', 'run', 'weeklyLimitHitAt']);
+    await chrome.storage.local.remove(['history', 'noteQuota', 'run', 'weeklyLimitHitAt', 'weeklyLimitHow']);
   });
 }
 
@@ -289,8 +292,11 @@ function renderUsage() {
   const hit = $('uWeeklyHit');
   if (weeklyLimitHitAt && now - weeklyLimitHitAt < WEEK) {
     hit.hidden = false;
-    hit.textContent = `LinkedIn showed its weekly-limit warning on ${fmtDate(weeklyLimitHitAt)}. ` +
-      `It usually lifts about a week later (around ${fmtDate(weeklyLimitHitAt + WEEK)}). Until then LinkedIn will refuse new invites.`;
+    const how = weeklyLimitHow === 'refused'
+      ? `LinkedIn stopped accepting invites on ${fmtDate(weeklyLimitHitAt)} (they came back as "Connect again")`
+      : `LinkedIn showed its weekly-limit warning on ${fmtDate(weeklyLimitHitAt)}`;
+    hit.textContent = `You're done for this week. ${how}. ` +
+      `New invites should work again around ${fmtDate(weeklyLimitHitAt + WEEK)}. Until then Connecto stops at the first refused invite.`;
   } else hit.hidden = true;
 }
 

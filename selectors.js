@@ -20,6 +20,9 @@ globalThis.CONNECTO_SEL = {
   label: {
     pending: [/^pending\b/i, /withdraw invitation/i, /invitation sent to/i],
     connect: [/^invite .+ to connect$/i, /^connect$/i],
+    // Shown on a card when LinkedIn silently refused the invite (usually the
+    // weekly invitation limit): the button flips back instead of to Pending.
+    connectAgain: [/connect again/i],
     message: [/^message\b/i],
     follow: [/^follow\b/i]
   },
@@ -27,6 +30,9 @@ globalThis.CONNECTO_SEL = {
   // Dialogs (invite modal, limit warnings, upsells).
   dialog: '[role="dialog"], [role="alertdialog"], .artdeco-modal, [data-test-modal]',
   // Things that look like dialogs but aren't (chat bubbles etc.).
+  // Toasts / alerts LinkedIn shows at the edge of the page (checked for
+  // weekly-limit wording after each Send).
+  toast: '.artdeco-toasts_toasts, .artdeco-toast-item, [data-test-artdeco-toast-item-type], [role="alert"]',
   dialogIgnore: '[class*="msg-overlay"], [class*="msg-convo"], aside',
   // LinkedIn sometimes renders modals inside a shadow root.
   shadowHosts: ['#interop-outlet', '[data-testid="interop-shadowdom"]'],
@@ -66,7 +72,10 @@ globalThis.CONNECTO_SEL = {
       /weekly invitation limit/i,
       /reached the weekly limit/i,
       /out of invitations/i,
-      /too many (pending )?invitations/i
+      /too many (pending )?invitations/i,
+      /invitation limit/i,
+      /can'?t send (more )?invitations/i,
+      /try again next week/i
     ],
     emailRequired: [
       /enter (their|his|her) email/i,

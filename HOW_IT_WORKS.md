@@ -64,7 +64,7 @@ For each person who can be invited:
 1. Scroll the card into view and click **Connect**.
 2. Wait for LinkedIn's dialog (it also looks inside shadow roots, where LinkedIn sometimes renders modals).
 3. Identify the dialog:
-   - **Weekly limit warning** → close it, save the time as `weeklyLimitHitAt`, and stop the whole run.
+   - **Weekly limit warning** (dialog or toast) → close it, save the time as `weeklyLimitHitAt`, and stop the whole run.
    - **Email required** → close it and skip this person.
    - **Out of personalized notes** (Free) → send without a note or stop, depending on your setting.
 4. Without a note: click **Send without a note** (or **Send**).
@@ -73,7 +73,11 @@ For each person who can be invited:
    - Read LinkedIn's real limit from the box's `maxlength` and its "0/300" counter, and save it.
    - Choose the note: the full note if it fits, otherwise the short version, otherwise none.
    - Type the note the way a person would (firing the input events LinkedIn listens for), check it landed, then click **Send**.
-6. **Confirm** the card now shows **Pending**. If it doesn't, the result is still logged as sent but marked "(unverified)".
+6. **Confirm.** Watch the card for up to 6 seconds:
+   - it shows **Pending** → sent;
+   - a weekly-limit dialog or toast appears → stop the run;
+   - the button comes back as **Connect again** (or still **Connect**) → **not sent**. LinkedIn silently refused it, which almost always means the weekly limit. Logged as failed; two in a row stops the run with a "done for this week" message and a banner on the page;
+   - anything else (for example the card re-rendered without a button) → logged as sent, marked "(unverified)".
 7. Record the result in `history` and the live `run` log, wait about a second for LinkedIn to finish re-rendering, and move to the next person. There are no other delays.
 
 ## Choosing the note
@@ -110,7 +114,7 @@ A run ends when:
 
 - there's no **Next** page left (every page of results has been processed);
 - you press **Stop**;
-- LinkedIn shows its weekly invitation limit warning;
+- LinkedIn's weekly invitation limit is reached: either it shows a warning, or invites bounce back to **Connect again** (two in a row, or one if the limit was already hit in the last 7 days);
 - a Free account is out of notes and "When notes run out" is set to **Stop the run**.
 
 The popup's **Usage & limits** panel is computed from `history` and is for information only: sent in the last 7 days (against a typical weekly limit of ~100 for Free or ~200 for Premium, based on the account type in effect), today and this month, notes sent and left, the note length limit, the account type, and, if the weekly warning appeared in the last 7 days, when it should lift.
@@ -133,7 +137,7 @@ Everything lives in `chrome.storage.local` in your browser:
 | `run` | Live state of the current or last run (status, counters, last 300 log lines) |
 | `history` | Every invite result with timestamp, name, profile URL, and whether a note was used (last 5,000) |
 | `noteQuota` | This month's Free note usage and whether LinkedIn said you're out |
-| `weeklyLimitHitAt` | When LinkedIn last showed its weekly invitation limit warning |
+| `weeklyLimitHitAt`, `weeklyLimitHow` | When the weekly limit was last hit, and whether LinkedIn showed a warning or silently bounced invites |
 | `detected` | Detected account type and the note limits read from LinkedIn |
 
 **Export CSV** downloads `history`. **Reset counters & history** clears it.
