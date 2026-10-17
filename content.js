@@ -6,8 +6,11 @@
  * watches.
  */
 (() => {
-  if (globalThis.__connectoLoaded) return;
-  globalThis.__connectoLoaded = true;
+  // Load once per version, so an updated Connecto replaces an older copy
+  // that is still sitting in an open tab.
+  const BUILD = chrome.runtime.getManifest().version;
+  if (globalThis.__connectoLoaded === BUILD) return;
+  globalThis.__connectoLoaded = BUILD;
 
   const S = globalThis.CONNECTO_SEL;
   const NOTE = globalThis.CONNECTO_NOTE;
@@ -788,7 +791,6 @@
         }
 
         if (stopRequested) break;
-        if (!settings.allPages) break;
         state.message = 'Opening the next page…';
         await push();
         if (!(await goNextPage())) { capMessage = 'No more result pages.'; break; }
@@ -810,7 +812,7 @@
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (!msg || !msg.type) return;
-    if (msg.type === 'PING') { sendResponse({ ok: true, busy, onSearch: isSearchPage() }); return; }
+    if (msg.type === 'PING') { sendResponse({ ok: true, busy, onSearch: isSearchPage(), build: BUILD }); return; }
     if (msg.type === 'DETECT') {
       detectAccount(!!msg.force).then(d => sendResponse({ ok: true, detected: d }));
       return true; // async response

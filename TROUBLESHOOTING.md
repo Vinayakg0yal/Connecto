@@ -27,7 +27,6 @@ Some profiles hide **Connect** behind **More**, or only allow following. Connect
 
 Check the message in the popup. Common reasons:
 
-- It finished the page (turn on **Continue through all results pages** to keep going)
 - No more result pages
 - LinkedIn showed its weekly invitation limit warning (the Usage & limits panel shows roughly when it lifts)
 - Notes ran out and "When notes run out" is set to **Stop the run**
@@ -36,6 +35,14 @@ Check the message in the popup. Common reasons:
 ## The popup shows a stalled run
 
 If the LinkedIn tab hasn't reported progress for 45 seconds, the popup treats the run as stalled. Reload the LinkedIn tab and start again. Already-invited people will be skipped as **Pending**.
+
+## The popup says the tab is running an older version
+
+Connecto was updated while that LinkedIn tab was open. Click **Update now** in the banner: it refreshes the tab and reloads Connecto. Then open the popup again.
+
+## The run says "Reached the 1-page limit"
+
+That message only exists in version 1.0.0. Reload Connecto in `chrome://extensions`, refresh the LinkedIn tab, and check that the popup no longer has a "Continue through all results pages" checkbox.
 
 ## I edited the code and nothing changed
 
