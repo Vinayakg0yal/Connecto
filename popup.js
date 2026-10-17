@@ -4,8 +4,7 @@ const DEFAULTS = {
   modeChoice: 'auto',
   note: '',
   freeFallback: 'withoutNote',
-  shortNote: '',
-  allPages: false
+  shortNote: ''
 };
 const TYPICAL_WEEKLY = 100;     // LinkedIn doesn't publish it; ~100/week is typical
 const TYPICAL_FREE_NOTES = 5;   // typical Free personalized notes per month
@@ -33,7 +32,7 @@ async function init() {
   const store = await chrome.storage.local.get(['settings', 'run', 'history', 'noteQuota', 'detected', 'weeklyLimitHitAt']);
   settings = { ...DEFAULTS, ...(store.settings || {}) };
   // Drop settings from older versions (manual mode, pacing and caps).
-  for (const k of ['mode', 'minDelay', 'maxDelay', 'perRunCap', 'weeklyCap', 'freeNotesPerMonth', 'maxPages']) delete settings[k];
+  for (const k of ['mode', 'allPages', 'minDelay', 'maxDelay', 'perRunCap', 'weeklyCap', 'freeNotesPerMonth', 'maxPages']) delete settings[k];
   weeklyLimitHitAt = store.weeklyLimitHitAt || null;
   detected = store.detected || null;
   run = store.run || null;
@@ -60,14 +59,15 @@ async function init() {
 
   // Ask the LinkedIn tab to (re)check the account type in the background.
   if (tab && /^https:\/\/www\.linkedin\.com\//.test(tab.url || '')) {
-    ensureContentScript().then(() => chrome.tabs.sendMessage(tab.id, { type: 'DETECT', force: true })).catch(() => {});
+    ensureContentScript()
+      .then(() => chrome.tabs.sendMessage(tab.id, { type: 'DETECT', force: true }))
+      .catch(e => { if (e && e.message === 'stale') showStale(); });
   }
 }
 
 function fillForm() {
   $('note').value = settings.note;
   $('shortNote').value = settings.shortNote;
-  $('allPages').checked = settings.allPages;
   $('fallback').value = settings.freeFallback;
 }
 
@@ -95,7 +95,6 @@ function bind() {
   }));
 
   $('shortNote').addEventListener('input', () => { settings.shortNote = $('shortNote').value; save(); renderNote(); });
-  $('allPages').addEventListener('change', () => { settings.allPages = $('allPages').checked; save(); });
   $('fallback').addEventListener('change', () => { settings.freeFallback = $('fallback').value; save(); });
 
 
@@ -204,7 +203,9 @@ function renderNote() {
   }
 }
 
+let stale = false;
 function renderBanner() {
+  if (stale) return; // the update banner stays until fixed
   const b = $('pageBanner');
   const onSearch = tab && SEARCH_RE.test(tab.url || '');
   if (onSearch) { b.hidden = true; return; }
@@ -322,13 +323,44 @@ function say(text, isError = true) {
   m.classList.toggle('error', isError);
 }
 
-async function ensureContentScript() {
-  try {
-    const r = await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
-    if (r && r.ok) return r;
-  } catch (_) { /* not injected yet */ }
+const BUILD = chrome.runtime.getManifest().version;
+
+async function inject() {
   await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['selectors.js', 'note.js', 'content.js'] });
   return chrome.tabs.sendMessage(tab.id, { type: 'PING' });
+}
+
+// Makes sure the LinkedIn tab runs this version of Connecto's page script.
+async function ensureContentScript() {
+  let r = null;
+  try { r = await chrome.tabs.sendMessage(tab.id, { type: 'PING' }); } catch (_) { /* nothing listening */ }
+  if (r && r.ok) {
+    if (r.build === BUILD || r.busy) return r;
+    // An older copy is still active in the tab. Adding a second copy next to
+    // it could make both respond, so ask for a reload instead.
+    throw new Error('stale');
+  }
+  r = await inject();
+  if (!r || r.build !== BUILD) throw new Error('stale');
+  return r;
+}
+
+function showStale() {
+  stale = true;
+  const b = $('pageBanner');
+  b.hidden = false;
+  b.textContent = '';
+  b.append('This LinkedIn tab is running an older version of Connecto. ');
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'link';
+  btn.textContent = 'Update now';
+  btn.addEventListener('click', async () => {
+    // Refresh the tab, then reload Connecto from disk (this closes the popup).
+    try { await chrome.tabs.reload(tab.id); } catch (_) {}
+    chrome.runtime.reload();
+  });
+  b.append(btn);
 }
 
 async function begin(type) {
@@ -348,6 +380,7 @@ async function begin(type) {
     if (r && !r.ok) say(r.error || 'Could not start.');
     else say(type === 'SCAN' ? 'Scanning…' : 'Starting…', false);
   } catch (e) {
+    if (e && e.message === 'stale') { showStale(); return say('Press "Update now" at the top, then open Connecto again.'); }
     say('Could not reach the page. Reload the LinkedIn tab and try again.');
   }
 }

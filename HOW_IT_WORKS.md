@@ -108,7 +108,7 @@ Connecto has **no pacing or caps of its own**. It doesn't add random delays, per
 
 A run ends when:
 
-- every card on the page has been processed (or, with **Continue through all results pages** on, there's no **Next** page left);
+- there's no **Next** page left (every page of results has been processed);
 - you press **Stop**;
 - LinkedIn shows its weekly invitation limit warning;
 - a Free account is out of notes and "When notes run out" is set to **Stop the run**.
@@ -117,7 +117,11 @@ The popup's **Usage & limits** panel is computed from `history` and is for infor
 
 ## Multi-page runs
 
-With **Continue through all results pages automatically** on, after finishing a page Connecto scrolls down, clicks LinkedIn's **Next** button, waits until the page number changes and the first result is different, lets the new results render, and continues until there are no more pages.
+Every run is multi-page. After finishing a page Connecto scrolls down, clicks LinkedIn's **Next** button, waits until the page number changes and the first result is different, lets the new results render, and continues until there are no more pages.
+
+## Version check
+
+The page script reports its version (from `manifest.json`) when the popup pings it. If an open LinkedIn tab is still running an older copy, which happens when Connecto is updated while the tab is open, the popup doesn't inject a second copy next to it, because both could respond to **Send invites**. It shows an **Update now** banner instead, which refreshes the tab and reloads the extension.
 
 ## Storage
 

@@ -52,9 +52,9 @@ Connecto has no delays or caps of its own: it sends invites back to back, waitin
 
 You can close the popup during a run. Keep the LinkedIn tab open; reopening the popup shows the current progress.
 
-## Continue through all results pages
+## Multiple pages
 
-Tick **Continue through all results pages automatically** to have Connecto click **Next** after each page and keep going until there are no more results. Leave it off to process only the page you're on.
+**Send invites** works through every page of results on its own: when a page is done, Connecto clicks **Next** and carries on. It keeps going until you press **Stop**, the results run out, or LinkedIn shows its weekly-limit warning.
 
 ## Usage & limits
 
