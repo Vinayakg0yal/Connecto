@@ -25,6 +25,7 @@ It only runs when you press a button, only on the LinkedIn tab you're looking at
 
 ## Features
 
+- **Message templates**: one tap for a polite job-hunt, cold, recruiter, referral or networking note, sized to your account's limit.
 - **Personalized notes** with `{firstName}` and `{name}` placeholders (names are cleaned of emoji, pronouns, "(Hiring)", ", MBA" and so on).
 - **Preview mode** shows who would be invited and who would be skipped, without clicking anything.
 - **Free vs Premium auto-detection**, with a manual override.

@@ -52,6 +52,18 @@ The counter shows your note's length against the limit for your account (usually
 
 **Free accounts only:** LinkedIn allows a few personalized notes per month. The popup shows how many are left, and you choose what happens when they run out: **Send without a note** or **Stop the run**.
 
+**Templates.** Not sure what to write? Tap **Templates** under the note and pick one:
+
+| Template | For |
+|---|---|
+| **Job hunt** | Politely asking about openings on someone's team |
+| **Cold** | Connecting with someone you don't know yet |
+| **Recruiter** | Letting a recruiter in your field know you're open to roles |
+| **Referral** | Asking someone at a company you want to join for their perspective |
+| **Network** | Growing your network with people in your field |
+
+Each one is short, polite and personalized with `{firstName}`. Connecto picks the version that fits your limit: a shorter one for Free (200 characters) and a fuller one for Premium (300). Edit it as you like. If you've already written your own note, it asks before replacing it.
+
 Leave the note empty to send invites without notes.
 
 ## 6. Preview
@@ -77,7 +89,7 @@ You can close the popup during a run. Keep the LinkedIn tab open; reopening the 
 
 ## Usage & limits
 
-The **Usage & limits** panel shows where you stand. In **Safe** mode it also shows how much of today's and this week's safe allowance is left (**Safe mode left**), and the run stops when either reaches zero. In **Crazy** mode the numbers are for information only.
+The **Usage & limits** panel (click the arrow to open it; its header shows this week's count) shows where you stand. In **Safe** mode it also shows how much of today's and this week's safe allowance is left (**Safe mode left**), and the run stops when either reaches zero. In **Crazy** mode the numbers are for information only.
 
 | Item | Meaning |
 |---|---|
@@ -103,7 +115,7 @@ A single bounce can occasionally be a glitch, so Connecto stops after **two boun
 
 ## Activity log and export
 
-The **Activity** list shows each person with their result and details. **Export CSV** downloads your full history (time, name, profile URL, result, details) for use in a spreadsheet.
+**Activity** (at the bottom, closed by default; click the arrow to open it) lists each person with their result and details. The number on it shows how many entries the last run logged. **Export CSV** downloads your full history (time, name, profile URL, result, details) for use in a spreadsheet.
 
 ## Tips
 
