@@ -9,10 +9,11 @@ Connecto isn't on the Chrome Web Store, so you load it as an "unpacked" extensio
 
 ## 1. Get the code
 
-**Option A: download a ZIP**
+**Option A: download the latest release (recommended)**
 
-1. On this repo's GitHub page, click **Code → Download ZIP**.
-2. Unzip it. You'll get a folder such as `Connecto-main`.
+1. Go to the [latest release](https://github.com/Vinayakg0yal/Connecto/releases/latest).
+2. Under **Assets**, download `Connecto-vX.Y.Z.zip`.
+3. Unzip it. You'll get a `Connecto` folder containing `manifest.json`.
 
 **Option B: clone with git**
 
