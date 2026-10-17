@@ -54,7 +54,7 @@ You can close the popup during a run. Keep the LinkedIn tab open; reopening the 
 
 ## Multiple pages
 
-**Send invites** works through every page of results on its own: when a page is done, Connecto clicks **Next** and carries on. It keeps going until you press **Stop**, the results run out, or LinkedIn shows its weekly-limit warning.
+**Send invites** works through every page of results on its own: when a page is done, Connecto clicks **Next** and carries on. It keeps going until you press **Stop**, the results run out, or LinkedIn's weekly invitation limit is reached.
 
 ## Usage & limits
 
@@ -69,7 +69,16 @@ The **Usage & limits** panel is for information only. Connecto never slows down 
 | Note length limit | Read from LinkedIn's note box, or the default until it's been read |
 | Account | Free or Premium, and whether it was detected, assumed, or set manually |
 
-If LinkedIn shows its **weekly invitation limit** warning, the run stops (LinkedIn refuses every further invite at that point), and the panel shows when it happened and roughly when it should lift, usually about a week later.
+### When you hit the weekly limit
+
+LinkedIn enforces its weekly invitation limit in two ways, and Connecto catches both:
+
+- **A warning** (pop-up or toast saying you've reached the weekly invitation limit).
+- **Silently**: you click Send, but the invite isn't sent. The card's button comes back as **Connect again** (or plain **Connect**) instead of **Pending**.
+
+When that happens the run stops and you get a message, in the popup and as a banner on the LinkedIn page, that you're **done for this week**, with how many invites you've sent in the last 7 days and roughly when LinkedIn should accept invites again (about a week later). The invite that bounced is logged as *Failed: Not sent*, not as sent.
+
+A single bounce can occasionally be a glitch, so Connecto stops after **two bounces in a row**. If the limit was already hit in the last 7 days, it stops at the **first** bounce.
 
 **Reset counters & history** clears your local history and counters.
 

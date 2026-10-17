@@ -11,7 +11,7 @@
 
 <p align="center">
   <img alt="Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest%20V3-1fb6a6">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.1.1-f59e0b">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.2.0-f59e0b">
   <img alt="No dependencies" src="https://img.shields.io/badge/dependencies-none-0b1f2c">
 </p>
 
@@ -33,7 +33,7 @@ It only runs when you press a button, only on the LinkedIn tab you're looking at
 - **Smart skipping**: pending invites, existing connections, follow-only profiles, and "email required" profiles.
 - **Fast runs**: no artificial delays or caps. It waits only as long as LinkedIn's pop-ups take to appear.
 - **Usage & limits panel**: invites sent today, this week (against LinkedIn's typical weekly limit: ~100 on Free, ~200 on Premium, matched to the detected account type) and this month, notes left, note length limit and account type. For information only.
-- **Weekly-limit handling**: if LinkedIn shows its weekly invitation limit warning, the run stops and the popup shows roughly when the limit should lift.
+- **Weekly-limit detection**: catches LinkedIn's weekly limit whether it shows a warning or silently bounces the invite back to **Connect again**. The run stops, tells you you're done for the week (in the popup and on the LinkedIn page), and shows roughly when invites will work again.
 - **Multi-page runs**: clicks **Next** after each page and keeps going until you press **Stop** or the results run out.
 - **Live stats and activity log** (Sent / Skipped / Failed), plus **CSV export** of your history.
 

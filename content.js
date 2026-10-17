@@ -147,7 +147,8 @@
     const ctrls = clickables(card);
     const find = pats => ctrls.find(el => matches(el, pats)) || null;
     const pending = find(S.label.pending);
-    const connect = pending ? null : find(S.label.connect);
+    const connectAgain = pending ? null : find(S.label.connectAgain || []);
+    const connect = pending || connectAgain ? null : find(S.label.connect);
     const message = find(S.label.message);
     const follow = find(S.label.follow);
 
@@ -166,12 +167,13 @@
     const firstDegree = /(^|\s|•)\s*1st\b/.test(textOf(card).slice(0, 500));
     let kind = 'skip', reason = '';
     if (pending) reason = 'Invitation already pending';
+    else if (connectAgain) reason = 'LinkedIn refused an earlier invite ("Connect again")';
     else if (connect) kind = 'connect';
     else if (firstDegree) reason = 'Already connected';
     else if (message) reason = 'Message only (connected or open profile)';
     else if (follow) reason = 'Connect not offered here (Follow only)';
     else reason = 'No Connect button';
-    return { name, url, kind, reason, control: connect };
+    return { name, url, kind, reason, control: connect, connectAgain: !!connectAgain };
   }
 
   async function loadAllResults() {
@@ -441,6 +443,21 @@
     return { retryWithoutNote: true, noteLimitHit: true };
   }
 
+  // Weekly-limit wording in a toast/alert at the edge of the page.
+  function weeklyToast() {
+    const roots = [document, ...S.shadowHosts.map(h => document.querySelector(h)).filter(Boolean).map(h => h.shadowRoot || h)];
+    for (const r of roots) {
+      for (const el of r.querySelectorAll(S.toast)) {
+        const t = textOf(el);
+        if (t && S.text.weeklyLimit.some(p => p.test(t))) return true;
+      }
+    }
+    return false;
+  }
+
+  const WEEKLY_STOP = 'LinkedIn says you have reached the weekly invitation limit. Stopped.';
+  const weeklyFail = () => ({ result: 'failed', detail: 'LinkedIn weekly invitation limit reached', stop: WEEKLY_STOP, weekly: true });
+
   async function confirmSent(card, info, before, withNote) {
     const out = await waitFor(() => {
       const d = newDialog(before);
@@ -451,7 +468,7 @@
     }, 8000);
     if (out === 'weekly') {
       await closeAll(before);
-      return { result: 'failed', detail: 'LinkedIn weekly invitation limit reached', stop: 'LinkedIn says you have reached the weekly invitation limit. Stopped.' };
+      return weeklyFail();
     }
     if (out === 'email') {
       await closeAll(before);
@@ -465,22 +482,36 @@
     }
     // Watch for the card to flip to "Pending", while also catching limit
     // warnings that LinkedIn shows a moment after the invite dialog closes.
+    // If LinkedIn silently refuses the invite (its weekly limit), the card
+    // flips to "Connect again" or back to "Connect" instead of "Pending".
     const after = await waitFor(() => {
       const d = newDialog(before);
       if (d && dialogKind(d) === 'weekly') return 'weekly';
+      if (weeklyToast()) return 'weekly';
       const c = refreshCard(card, info.url);
       if (c) {
         const i = cardInfo(c);
         if (i.kind === 'skip' && /pending/i.test(i.reason)) return 'pending';
+        if (i.connectAgain) return 'refused';
       }
       return null;
-    }, 4000, 300);
+    }, 6000, 300);
     if (after === 'weekly') {
       await closeAll(before);
-      return { result: 'failed', detail: 'LinkedIn weekly invitation limit reached', stop: 'LinkedIn says you have reached the weekly invitation limit. Stopped.' };
+      return weeklyFail();
     }
     const lateDialog = newDialog(before);
     if (lateDialog) await closeAll(before);
+    let refused = after === 'refused';
+    if (!after) {
+      // Not Pending after 6 s: if the Connect button is back, it wasn't sent.
+      const c = refreshCard(card, info.url);
+      const i = c && cardInfo(c);
+      if (i && (i.kind === 'connect' || i.connectAgain)) refused = true;
+    }
+    if (refused) {
+      return { result: 'failed', detail: 'Not sent: LinkedIn put the Connect button back ("Connect again")', refused: true, withNote: false };
+    }
     return { result: 'sent', detail: (withNote ? 'Sent with note' : 'Sent without note') + (after === 'pending' ? '' : ' (unverified)'), withNote };
   }
 
@@ -500,7 +531,7 @@
     const kind = dialogKind(dlg);
     if (kind === 'weekly') {
       await closeAll(before);
-      return { result: 'failed', detail: 'LinkedIn weekly invitation limit reached', stop: 'LinkedIn says you have reached the weekly invitation limit. Stopped.' };
+      return weeklyFail();
     }
     if (kind === 'email') { await closeAll(before); return { result: 'skipped', detail: 'LinkedIn requires their email address' }; }
     if (kind === 'noteLimit' && text) {
@@ -539,7 +570,7 @@
     if (!step) { await closeAll(before); return fail('Could not open the note box'); }
     if (step.k === 'weekly') {
       await closeAll(before);
-      return { result: 'failed', detail: 'LinkedIn weekly invitation limit reached', stop: 'LinkedIn says you have reached the weekly invitation limit. Stopped.' };
+      return weeklyFail();
     }
     if (step.k === 'noteLimit') {
       await setNoteQuota({ exhausted: true, reportedLeft: 0 });
@@ -687,6 +718,54 @@
     return true;
   }
 
+  // LinkedIn sometimes enforces its weekly limit silently: the invite bounces
+  // back to "Connect again". Two in a row is treated as the weekly limit.
+  const REFUSED_STOP = 2;
+
+  // Records the weekly limit, shows a banner on the LinkedIn page, and returns
+  // the message for the popup.
+  async function weeklyLimitReached(mode, how) {
+    const now = Date.now();
+    try { await chrome.storage.local.set({ weeklyLimitHitAt: now, weeklyLimitHow: how }); } catch (_) {}
+    const { history = [] } = await getStore('history');
+    const week = history.filter(h => h.result === 'sent' && h.t >= now - 7 * 864e5).length;
+    const typical = mode === 'premium' ? 200 : 100;
+    const until = new Date(now + 7 * 864e5).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    const why = how === 'refused'
+      ? 'LinkedIn stopped accepting invites (the Connect button came back as "Connect again").'
+      : 'LinkedIn showed its weekly invitation limit warning.';
+    const msg = `You're done for this week. ${why} You've sent ${week} invite${week === 1 ? '' : 's'} in the last 7 days ` +
+      `(typical ${mode === 'premium' ? 'Premium' : 'Free'} limit ~${typical}). ` +
+      `LinkedIn won't accept more until the limit resets, around ${until}. Run stopped.`;
+    showPageBanner(msg);
+    return msg;
+  }
+
+  function showPageBanner(text) {
+    try {
+      document.getElementById('connecto-banner')?.remove();
+      const b = document.createElement('div');
+      b.id = 'connecto-banner';
+      b.setAttribute('role', 'alert');
+      b.style.cssText = 'position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:2147483647;' +
+        'max-width:560px;width:calc(100% - 32px);background:#0b1f2c;color:#fff;border-left:5px solid #f59e0b;' +
+        'border-radius:10px;padding:14px 40px 14px 16px;font:14px/1.45 -apple-system,system-ui,sans-serif;' +
+        'box-shadow:0 8px 24px rgba(0,0,0,.25)';
+      const title = document.createElement('strong');
+      title.textContent = 'Connecto: weekly invitation limit reached';
+      title.style.cssText = 'display:block;margin-bottom:4px;color:#fbbf24';
+      const body = document.createElement('div');
+      body.textContent = text;
+      const x = document.createElement('button');
+      x.textContent = '×';
+      x.setAttribute('aria-label', 'Dismiss');
+      x.style.cssText = 'position:absolute;top:6px;right:10px;background:none;border:0;color:#fff;font-size:20px;cursor:pointer';
+      x.onclick = () => b.remove();
+      b.append(title, body, x);
+      document.body.append(b);
+    } catch (_) { /* never let the banner break a run */ }
+  }
+
   async function run(settings) {
     busy = true; stopRequested = false;
     settings = await resolveSettings(settings);
@@ -712,6 +791,10 @@
       }
 
       let attempts = 0;
+      let refusedInARow = 0;   // invites LinkedIn bounced back ("Connect again")
+      // If the weekly limit was hit in the last 7 days, stop at the first bounce.
+      const { weeklyLimitHitAt } = await getStore('weeklyLimitHitAt');
+      const refusedStop = weeklyLimitHitAt && Date.now() - weeklyLimitHitAt < 7 * 864e5 ? 1 : REFUSED_STOP;
       let page = 0;
       pages: while (true) {
         page++;
@@ -784,8 +867,9 @@
           await addHistory({ t: Date.now(), name: info.name, url: info.url, result: res.result, detail: res.detail, withNote: !!res.withNote });
           await push();
 
-          if (/weekly invitation limit/i.test(res.detail || '')) {
-            try { await chrome.storage.local.set({ weeklyLimitHitAt: Date.now() }); } catch (_) {}
+          refusedInARow = res.refused ? refusedInARow + 1 : (res.result === 'sent' ? 0 : refusedInARow);
+          if (res.weekly || refusedInARow >= refusedStop) {
+            throw new StopRun(await weeklyLimitReached(settings.mode, res.weekly ? 'warning' : 'refused'));
           }
           if (res.stop) throw new StopRun(res.stop);
         }
