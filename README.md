@@ -11,7 +11,7 @@
 
 <p align="center">
   <img alt="Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest%20V3-1fb6a6">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.2.0-f59e0b">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.3.0-f59e0b">
   <img alt="No dependencies" src="https://img.shields.io/badge/dependencies-none-0b1f2c">
 </p>
 
@@ -31,8 +31,10 @@ It only runs when you press a button, only on the LinkedIn tab you're looking at
 - **Live note-limit detection**: reads the real character limit from LinkedIn's note box instead of hard-coding 200/300.
 - **Short-note fallback**: if your note is too long, it uses your short version, or sends without a note. It never cuts a note off mid-sentence.
 - **Smart skipping**: pending invites, existing connections, follow-only profiles, and "email required" profiles.
-- **Fast runs**: no artificial delays or caps. It waits only as long as LinkedIn's pop-ups take to appear.
-- **Usage & limits panel**: invites sent today, this week (against LinkedIn's typical weekly limit: ~100 on Free, ~200 on Premium, matched to the detected account type) and this month, notes left, note length limit and account type. For information only.
+- **Two run modes**, both moving through result pages on their own:
+  - **Safe** (default): paced like a person, 25–60 s between invites, a 2–5 min break every 10, and stops at 15/day · 80/week (Free) or 30/day · 150/week (Premium), well under LinkedIn's typical weekly limits.
+  - **Crazy**: no delays, no caps, runs until LinkedIn's own limit stops it. Comes with a clear warning: LinkedIn doesn't allow bots that send invitations, and abuse can get your account restricted or banned.
+- **Usage & limits panel**: invites sent today, this week (against LinkedIn's typical weekly limit: ~100 on Free, ~200 on Premium, matched to the detected account type) and this month, notes left, note length limit and account type, plus how much of Safe mode's daily and weekly allowance is left.
 - **Weekly-limit detection**: catches LinkedIn's weekly limit whether it shows a warning or silently bounces the invite back to **Connect again**. The run stops, tells you you're done for the week (in the popup and on the LinkedIn page), and shows roughly when invites will work again.
 - **Multi-page runs**: clicks **Next** after each page and keeps going until you press **Stop** or the results run out.
 - **Live stats and activity log** (Sent / Skipped / Failed), plus **CSV export** of your history.
@@ -51,7 +53,7 @@ Full step-by-step instructions are in **[INSTALL.md](INSTALL.md)**.
 | Doc | What's in it |
 |---|---|
 | [INSTALL.md](INSTALL.md) | Installing, updating, pinning and uninstalling the extension |
-| [USAGE.md](USAGE.md) | Using the popup: notes, account type, the Usage & limits panel, exporting history |
+| [USAGE.md](USAGE.md) | Using the popup: Safe vs Crazy mode, notes, account type, the Usage & limits panel, exporting history |
 | [HOW_IT_WORKS.md](HOW_IT_WORKS.md) | Architecture, the invite flow, account and limit detection, storage |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Fixing common problems, and updating `selectors.js` when LinkedIn changes its layout |
 
@@ -85,6 +87,6 @@ No data is sent anywhere. There's no server, analytics or tracking.
 
 ## ⚠️ Important
 
-LinkedIn's User Agreement prohibits automated tools that send connection requests, and accounts that use them can be warned or restricted. Connecto only runs when you click it, but it **does not pace itself or cap volume**. Rapid, back-to-back invites are the pattern LinkedIn's automation detection looks for most, so heavy use raises the chance of a warning or restriction. Keep an eye on the Usage & limits panel, and use it at your own risk.
+LinkedIn's User Agreement prohibits automated tools that send connection requests, and accounts that use them can be warned or restricted. Connecto only runs when you click it. **Safe mode** (the default) paces itself and caps volume well below LinkedIn's typical limits to keep the risk down, but it can't remove it. **Crazy mode** removes all pacing and caps; rapid, back-to-back invites are exactly what LinkedIn's automation detection looks for, so abusing it can get your account restricted or permanently banned. Use either mode at your own risk.
 
 This project is not affiliated with, endorsed by, or sponsored by LinkedIn.

@@ -106,22 +106,39 @@ A note is never cut off mid-sentence. In the popup, length is checked against a 
 
 **Monthly notes (Free).** Connecto only treats notes as used up once LinkedIn itself says so (its "out of personalized invitations" prompt, or "0 remaining"). The popup shows an estimate based on a typical 5 notes a month until LinkedIn reports the real number.
 
-## Limits
+## Run modes and limits
 
-Connecto has **no pacing or caps of its own**. It doesn't add random delays, per-run limits or weekly caps; it waits only for LinkedIn's dialogs and re-renders.
+The popup's **Run mode** setting (`settings.runMode`, `safe` by default) is passed to the content script with `START`. The numbers live in `note.js` as `CONNECTO_MODES.SAFE`, shared by the popup and the content script.
+
+**Safe mode**
+
+- Before the run: counts invites sent today and in the last 7 days from `history`. If either is already at Safe mode's limit, the run doesn't start.
+- Between invites: a random 25–60 s pause, with a countdown in the popup. After every 10 invites sent, a longer 2–5 min break.
+- Before opening the next results page: a random 15–35 s pause.
+- Before each invite and each page: if today's or this week's count has reached its limit, the run ends with a "come back tomorrow" or "try again in a few days" message.
+
+| Limit | Free | Premium |
+|---|---|---|
+| Per day (calendar day) | 15 | 30 |
+| Per week (last 7 days) | 80 | 150 |
+
+**Crazy mode** adds no delays or limits of its own; it waits only for LinkedIn's dialogs and re-renders (about a second between invites).
+
+Pauses check the Stop flag every second, so **Stop** works mid-countdown.
 
 A run ends when:
 
 - there's no **Next** page left (every page of results has been processed);
 - you press **Stop**;
+- (Safe mode) Safe mode's daily or weekly limit is reached;
 - LinkedIn's weekly invitation limit is reached: either it shows a warning, or invites bounce back to **Connect again** (two in a row, or one if the limit was already hit in the last 7 days);
 - a Free account is out of notes and "When notes run out" is set to **Stop the run**.
 
-The popup's **Usage & limits** panel is computed from `history` and is for information only: sent in the last 7 days (against a typical weekly limit of ~100 for Free or ~200 for Premium, based on the account type in effect), today and this month, notes sent and left, the note length limit, the account type, and, if the weekly warning appeared in the last 7 days, when it should lift.
+The popup's **Usage & limits** panel is computed from `history`: sent in the last 7 days (against a typical weekly limit of ~100 for Free or ~200 for Premium, based on the account type in effect), today and this month, notes sent and left, the note length limit, the account type, Safe mode's remaining allowance (Safe mode only), and, if the weekly limit was hit in the last 7 days, when it should lift.
 
 ## Multi-page runs
 
-Every run is multi-page. After finishing a page Connecto scrolls down, clicks LinkedIn's **Next** button, waits until the page number changes and the first result is different, lets the new results render, and continues until there are no more pages.
+Every run is multi-page, in both modes. After finishing a page (and, in Safe mode, a 15–35 s pause) Connecto scrolls down, clicks LinkedIn's **Next** button, waits until the page number changes and the first result is different, lets the new results render, and continues until there are no more pages.
 
 ## Version check
 
@@ -133,7 +150,7 @@ Everything lives in `chrome.storage.local` in your browser:
 
 | Key | Contents |
 |---|---|
-| `settings` | Your popup settings (note, short note, account type choice, what to do when notes run out, multi-page) |
+| `settings` | Your popup settings (run mode, note, short note, account type choice, what to do when notes run out) |
 | `run` | Live state of the current or last run (status, counters, last 300 log lines) |
 | `history` | Every invite result with timestamp, name, profile URL, and whether a note was used (last 5,000) |
 | `noteQuota` | This month's Free note usage and whether LinkedIn said you're out |

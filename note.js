@@ -63,3 +63,19 @@ globalThis.CONNECTO_NOTE = (() => {
 
   return { LIMITS, cleanName, firstNameOf, render, pick, previewLength, effectiveMode, limitFor };
 })();
+
+/* Run modes, shared by the popup and the content script.
+ * Safe:  paced like a person and capped well below LinkedIn's typical weekly
+ *        limits (~100 Free / ~200 Premium).
+ * Crazy: no delays, no caps; runs until LinkedIn's own limit stops it. */
+globalThis.CONNECTO_MODES = {
+  SAFE: {
+    inviteDelay: [25, 60],     // seconds between invites (random)
+    breakEvery: 10,            // take a longer break after this many sent
+    breakDelay: [120, 300],    // seconds
+    pageDelay: [15, 35],       // seconds before opening the next results page
+    daily: { free: 15, premium: 30 },
+    weekly: { free: 80, premium: 150 }
+  },
+  runMode: s => (s && s.runMode === 'crazy' ? 'crazy' : 'safe')
+};

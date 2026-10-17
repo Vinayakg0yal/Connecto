@@ -1,7 +1,9 @@
 /* Connecto popup. Settings + controls; live progress comes from chrome.storage ("run"). */
 const NOTE = globalThis.CONNECTO_NOTE;
+const MODES = globalThis.CONNECTO_MODES;
 const DEFAULTS = {
   modeChoice: 'auto',
+  runMode: 'safe',
   note: '',
   freeFallback: 'withoutNote',
   shortNote: ''
@@ -83,8 +85,20 @@ function save() {
 }
 
 function bind() {
-  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.seg button[data-mode]').forEach(b => b.addEventListener('click', () => {
     settings.modeChoice = b.dataset.mode;
+    save(); renderAll();
+  }));
+  document.querySelectorAll('.seg button[data-run]').forEach(b => b.addEventListener('click', () => {
+    const next = b.dataset.run;
+    if (next === settings.runMode) return;
+    if (next === 'crazy' && !confirm(
+      'Turn on Crazy mode?\n\n' +
+      'No delays and no limits: Connecto sends invites back to back until LinkedIn refuses them.\n\n' +
+      'LinkedIn does not allow bots or automated tools that send connection requests. ' +
+      'Abusing this can get your account restricted or permanently banned.\n\n' +
+      'Use it at your own risk.')) return;
+    settings.runMode = next;
     save(); renderAll();
   }));
 
@@ -152,9 +166,30 @@ function renderAll() {
   renderRun();
 }
 
+// Safe-mode caps for the account type in effect.
+function safeCaps() {
+  const m = effMode();
+  return { day: MODES.SAFE.daily[m] || MODES.SAFE.daily.free, week: MODES.SAFE.weekly[m] || MODES.SAFE.weekly.free };
+}
+
+function renderRunMode() {
+  const rm = MODES.runMode(settings);
+  document.querySelectorAll('.seg button[data-run]').forEach(b =>
+    b.setAttribute('aria-checked', String(b.dataset.run === rm)));
+  const S = MODES.SAFE, c = safeCaps();
+  const acct = effMode() === 'premium' ? 'Premium' : 'Free';
+  $('runHint').textContent = rm === 'safe'
+    ? `Follows LinkedIn's pace: ${S.inviteDelay[0]}–${S.inviteDelay[1]} s between invites, a ${S.breakDelay[0] / 60}–${S.breakDelay[1] / 60} min break every ${S.breakEvery}, ` +
+      `and stops at ${c.day} a day / ${c.week} a week (${acct}). Moves to the next page on its own.`
+    : 'No delays, no limits. Moves to the next page on its own and keeps going until LinkedIn\'s weekly limit stops it.';
+  $('crazyWarn').hidden = rm !== 'crazy';
+  document.body.classList.toggle('crazy', rm === 'crazy');
+}
+
 function renderMode() {
-  document.querySelectorAll('.seg button').forEach(b =>
+  document.querySelectorAll('.seg button[data-mode]').forEach(b =>
     b.setAttribute('aria-checked', String(b.dataset.mode === settings.modeChoice)));
+  renderRunMode();
   const mode = effMode();
   const free = mode === 'free';
   const limit = limitNow();
@@ -267,6 +302,15 @@ function renderUsage() {
   const notes = month.filter(h => h.withNote).length;
 
   const cap = weeklyLimit();
+  const safe = MODES.runMode(settings) === 'safe';
+  $('uModeNote').textContent = safe
+    ? 'Safe mode stops on its own at its daily and weekly limits.'
+    : 'Crazy mode: these numbers are for information only; nothing slows down.';
+  $('uSafeWrap').hidden = !safe;
+  if (safe) {
+    const c = safeCaps();
+    $('uSafeLeft').textContent = `${Math.max(0, c.day - today)} today · ${Math.max(0, c.week - week)} this week`;
+  }
   $('uWeek').textContent = week;
   $('uWeekCap').textContent = `/ ~${cap}`;
   $('uWeekHint').textContent = `about ${cap} a week is typical for ${effMode() === 'premium' ? 'Premium' : 'Free'} accounts`;

@@ -8,11 +8,30 @@ On LinkedIn, search for anything and choose the **People** filter, then add any 
 
 Click the Connecto icon in the toolbar. If you're not on a People search page, a banner tells you so.
 
-## 3. Account type
+## 3. Run mode: Safe or Crazy
+
+Pick a mode at the top of the popup. Both modes move to the next results page on their own; you never have to change pages yourself.
+
+| | **Safe** (default) | **Crazy** |
+|---|---|---|
+| Gap between invites | Random 25–60 s | None (about a second for LinkedIn to re-render) |
+| Breaks | 2–5 min after every 10 invites | None |
+| Pause before the next page | 15–35 s | None |
+| Daily limit | 15 (Free) · 30 (Premium) | None |
+| Weekly limit (last 7 days) | 80 (Free) · 150 (Premium) | None; runs until LinkedIn's own weekly limit stops it |
+| Risk | Lower, but not zero | High |
+
+**Safe mode** follows LinkedIn's pace: it waits between invites like a person would, takes breaks, and stops on its own when it reaches its daily or weekly limit ("come back tomorrow" / "try again in a few days"). The limits sit well under LinkedIn's typical weekly limits (~100 Free, ~200 Premium). The popup shows a countdown to the next invite.
+
+**Crazy mode** has no delays and no limits. It sends invites back to back and keeps going until LinkedIn itself refuses them. Switching to it asks you to confirm, and the popup shows a red warning while it's on:
+
+> ⚠️ LinkedIn's User Agreement does not allow bots or automated tools that send connection requests, and rapid bulk invites are exactly what its detection looks for. Abusing Crazy mode can get your account **restricted or permanently banned**. Use it at your own risk.
+
+## 4. Account type
 
 Leave it on **Auto**. Connecto detects whether your account is Free or Premium and shows what it found under the switch. Choose **Free** or **Premium** only if the detection is wrong.
 
-## 4. Write your note (optional)
+## 5. Write your note (optional)
 
 Type or paste a note. Use the chips to insert placeholders:
 
@@ -35,7 +54,7 @@ The counter shows your note's length against the limit for your account (usually
 
 Leave the note empty to send invites without notes.
 
-## 5. Preview
+## 6. Preview
 
 Click **Preview**. Connecto lists everyone on the page as either:
 
@@ -44,21 +63,21 @@ Click **Preview**. Connecto lists everyone on the page as either:
 
 Nothing is clicked or sent. The first Preview may briefly open one invite box to read LinkedIn's note limit, then close it.
 
-## 6. Send invites
+## 7. Send invites
 
 Click **Send invites**. You'll see **Sent / Skipped / Failed** update live, with a progress bar. Press **Stop** at any time; the run finishes its current step and stops.
 
-Connecto has no delays or caps of its own: it sends invites back to back, waiting only as long as LinkedIn's pop-ups take to appear.
+In **Safe** mode you'll see a countdown to the next invite (and to the next page). In **Crazy** mode invites go out back to back.
 
 You can close the popup during a run. Keep the LinkedIn tab open; reopening the popup shows the current progress.
 
 ## Multiple pages
 
-**Send invites** works through every page of results on its own: when a page is done, Connecto clicks **Next** and carries on. It keeps going until you press **Stop**, the results run out, or LinkedIn's weekly invitation limit is reached.
+**Send invites** works through every page of results on its own: when a page is done, Connecto clicks **Next** and carries on. It keeps going until you press **Stop**, the results run out, LinkedIn's weekly invitation limit is reached, or (in Safe mode) Safe mode's daily or weekly limit is reached.
 
 ## Usage & limits
 
-The **Usage & limits** panel is for information only. Connecto never slows down or stops because of these numbers.
+The **Usage & limits** panel shows where you stand. In **Safe** mode it also shows how much of today's and this week's safe allowance is left (**Safe mode left**), and the run stops when either reaches zero. In **Crazy** mode the numbers are for information only.
 
 | Item | Meaning |
 |---|---|
@@ -88,6 +107,6 @@ The **Activity** list shows each person with their result and details. **Export 
 
 ## Tips
 
-- Keep numbers modest. Connecto doesn't pace itself, so watch the weekly count in Usage & limits and stop well before your typical weekly limit (~100 on Free, ~200 on Premium).
+- Stay in **Safe** mode unless you understand the risk. If you use Crazy mode, watch the weekly count in Usage & limits and stop well before your typical weekly limit (~100 on Free, ~200 on Premium).
 - Narrow your search with filters so the people you invite are relevant.
 - Always run **Preview** after changing your note to check how names come out.
