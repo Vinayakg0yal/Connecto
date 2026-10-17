@@ -6,7 +6,9 @@ const DEFAULTS = {
   freeFallback: 'withoutNote',
   shortNote: ''
 };
-const TYPICAL_WEEKLY = 100;     // LinkedIn doesn't publish it; ~100/week is typical
+// LinkedIn doesn't publish its weekly invitation limit. These are the typical
+// figures: about 100 a week on Free accounts and about 200 on Premium.
+const WEEKLY_LIMITS = { free: 100, premium: 200 };
 const TYPICAL_FREE_NOTES = 5;   // typical Free personalized notes per month
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 const SEARCH_RE = /^https:\/\/www\.linkedin\.com\/search\/results\/people/;
@@ -116,6 +118,10 @@ const fmtDate = t => new Date(t).toLocaleDateString(undefined, { month: 'short',
 
 /* ---------------- counters ---------------- */
 
+// Typical weekly limit for the account type in effect (detected in Auto, or chosen).
+function weeklyLimit() {
+  return WEEKLY_LIMITS[effMode()] || WEEKLY_LIMITS.free;
+}
 function weeklySent() {
   const since = Date.now() - WEEK;
   return history.filter(h => h.result === 'sent' && h.t >= since).length;
@@ -227,7 +233,7 @@ function renderRun() {
   $('progressText').textContent = r.total
     ? `${r.processed || 0} of ${r.total} profiles${r.page > 1 ? ` · page ${r.page}` : ''}${r.dryRun ? ` · ${r.ready || 0} ready` : ''}`
     : 'Ready';
-  $('weekText').textContent = `This week: ${weeklySent()} sent`;
+  $('weekText').textContent = `This week: ${weeklySent()} / ~${weeklyLimit()}`;
 
   let msg = r.message || '';
   const stale = run && ACTIVE.includes(run.status) && !active;
@@ -257,10 +263,13 @@ function renderUsage() {
   const month = sent.filter(h => monthKey(new Date(h.t)) === m);
   const notes = month.filter(h => h.withNote).length;
 
+  const cap = weeklyLimit();
   $('uWeek').textContent = week;
+  $('uWeekCap').textContent = `/ ~${cap}`;
+  $('uWeekHint').textContent = `about ${cap} a week is typical for ${effMode() === 'premium' ? 'Premium' : 'Free'} accounts`;
   const bar = $('uWeekBar');
-  bar.style.width = Math.min(100, Math.round((week / TYPICAL_WEEKLY) * 100)) + '%';
-  bar.className = week >= TYPICAL_WEEKLY ? 'over' : week >= TYPICAL_WEEKLY * 0.8 ? 'high' : '';
+  bar.style.width = Math.min(100, Math.round((week / cap) * 100)) + '%';
+  bar.className = week >= cap ? 'over' : week >= cap * 0.8 ? 'high' : '';
   $('uToday').textContent = today;
   $('uMonth').textContent = month.length;
   $('uNotes').textContent = notes;

@@ -64,7 +64,7 @@
     <summary>Usage &amp; limits</summary>
     <div class="row small">
       <span>Sent in the last 7 days</span>
-      <strong><span id="uWeek">0</span> <span class="muted">/ ~100</span></strong>
+      <strong><span id="uWeek">0</span> <span class="muted" id="uWeekCap">/ ~100</span></strong>
     </div>
     <div class="progress meter" aria-hidden="true"><div id="uWeekBar"></div></div>
     <dl class="usage-list">
@@ -76,7 +76,7 @@
       <div><dt>Account</dt><dd id="uAccount">–</dd></div>
     </dl>
     <p id="uWeeklyHit" class="warn" hidden></p>
-    <p class="hint">For information only. Connecto never slows down or stops because of these numbers. LinkedIn doesn't publish its weekly invitation limit; about 100 a week is typical. If you go over, LinkedIn shows a warning and blocks invites for a while.</p>
+    <p class="hint">For information only. Connecto never slows down or stops because of these numbers. LinkedIn doesn't publish its weekly invitation limit; <span id="uWeekHint">about 100 a week is typical for Free accounts</span>. If you go over, LinkedIn shows a warning and blocks invites for a while.</p>
     <button type="button" id="clearHistory" class="link danger">Reset counters &amp; history</button>
   </details>
 
