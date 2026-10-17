@@ -62,7 +62,7 @@ The **Usage & limits** panel is for information only. Connecto never slows down 
 
 | Item | Meaning |
 |---|---|
-| Sent in the last 7 days | With a bar against LinkedIn's typical ~100/week (it turns amber near the limit and red past it). LinkedIn doesn't publish the exact number. |
+| Sent in the last 7 days | With a bar against LinkedIn's typical weekly limit for your account type: ~100 on Free, ~200 on Premium. In **Auto** it follows the detected account type (it turns amber near the limit and red past it). LinkedIn doesn't publish the exact number. |
 | Sent today / this month | Invites sent, from your local history |
 | Notes sent this month | Invites that included a personalized note |
 | Personalized notes left | Free accounts: exact once LinkedIn shows its "X remaining" text, otherwise an estimate. Premium: unlimited |
@@ -79,6 +79,6 @@ The **Activity** list shows each person with their result and details. **Export 
 
 ## Tips
 
-- Keep numbers modest. Connecto doesn't pace itself, so watch the weekly count in Usage & limits and stop well before ~100.
+- Keep numbers modest. Connecto doesn't pace itself, so watch the weekly count in Usage & limits and stop well before your typical weekly limit (~100 on Free, ~200 on Premium).
 - Narrow your search with filters so the people you invite are relevant.
 - Always run **Preview** after changing your note to check how names come out.

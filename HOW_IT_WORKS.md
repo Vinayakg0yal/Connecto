@@ -113,7 +113,7 @@ A run ends when:
 - LinkedIn shows its weekly invitation limit warning;
 - a Free account is out of notes and "When notes run out" is set to **Stop the run**.
 
-The popup's **Usage & limits** panel is computed from `history` and is for information only: sent in the last 7 days (against a typical ~100/week), today and this month, notes sent and left, the note length limit, the account type, and, if the weekly warning appeared in the last 7 days, when it should lift.
+The popup's **Usage & limits** panel is computed from `history` and is for information only: sent in the last 7 days (against a typical weekly limit of ~100 for Free or ~200 for Premium, based on the account type in effect), today and this month, notes sent and left, the note length limit, the account type, and, if the weekly warning appeared in the last 7 days, when it should lift.
 
 ## Multi-page runs
 

@@ -32,7 +32,7 @@ It only runs when you press a button, only on the LinkedIn tab you're looking at
 - **Short-note fallback**: if your note is too long, it uses your short version, or sends without a note. It never cuts a note off mid-sentence.
 - **Smart skipping**: pending invites, existing connections, follow-only profiles, and "email required" profiles.
 - **Fast runs**: no artificial delays or caps. It waits only as long as LinkedIn's pop-ups take to appear.
-- **Usage & limits panel**: invites sent today, this week (against LinkedIn's typical ~100/week) and this month, notes left, note length limit and account type. For information only.
+- **Usage & limits panel**: invites sent today, this week (against LinkedIn's typical weekly limit: ~100 on Free, ~200 on Premium, matched to the detected account type) and this month, notes left, note length limit and account type. For information only.
 - **Weekly-limit handling**: if LinkedIn shows its weekly invitation limit warning, the run stops and the popup shows roughly when the limit should lift.
 - **Multi-page runs**: clicks **Next** after each page and keeps going until you press **Stop** or the results run out.
 - **Live stats and activity log** (Sent / Skipped / Failed), plus **CSV export** of your history.
