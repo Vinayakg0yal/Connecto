@@ -147,3 +147,13 @@ details summary { cursor: pointer; font-weight: 600; }
 .usage-list dt { color: var(--muted); font-size: 11px; }
 .usage-list dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 .usage .warn { margin-top: 10px; }
+
+/* Run mode */
+.danger-box {
+  margin-top: 8px; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.45;
+  background: color-mix(in srgb, var(--bad) 12%, var(--surface)); color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--bad) 45%, transparent);
+}
+.danger-box strong { display: block; color: var(--bad); margin-bottom: 2px; }
+.seg button[data-run="crazy"][aria-checked="true"] { color: var(--bad); }
+body.crazy .btn.primary { background: var(--bad); }

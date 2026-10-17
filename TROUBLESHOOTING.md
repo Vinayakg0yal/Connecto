@@ -28,6 +28,7 @@ Some profiles hide **Connect** behind **More**, or only allow following. Connect
 Check the message in the popup. Common reasons:
 
 - No more result pages
+- **Safe mode** reached its daily limit (15 Free / 30 Premium; come back tomorrow) or weekly limit (80 Free / 150 Premium in the last 7 days)
 - You've reached LinkedIn's weekly invitation limit: either LinkedIn showed a warning, or invites bounced back as **Connect again**. You're done for the week; the Usage & limits panel shows roughly when it lifts.
 - Notes ran out and "When notes run out" is set to **Stop the run**
 - The LinkedIn tab was closed or navigated away
@@ -43,6 +44,10 @@ Connecto was updated while that LinkedIn tab was open. Click **Update now** in t
 ## The run says "Reached the 1-page limit"
 
 That message only exists in version 1.0.0. Reload Connecto in `chrome://extensions`, refresh the LinkedIn tab, and check that the popup no longer has a "Continue through all results pages" checkbox.
+
+## It's sending slowly
+
+That's **Safe mode**: 25–60 s between invites and a 2–5 min break every 10, on purpose. The popup shows a countdown. Switch to **Crazy** mode only if you accept the risk of your account being restricted or banned.
 
 ## I edited the code and nothing changed
 

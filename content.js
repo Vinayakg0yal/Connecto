@@ -82,6 +82,19 @@
 
   const isSearchPage = () => location.pathname.startsWith('/search/results/people');
 
+  // Waits ms with a countdown in the popup; returns false early if Stop was pressed.
+  async function pause(ms, label) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      if (stopRequested) return false;
+      if (label) state.message = `${label} ${Math.ceil((end - Date.now()) / 1000)}s…`;
+      await push();
+      await sleep(Math.min(1000, Math.max(0, end - Date.now())));
+    }
+    return !stopRequested;
+  }
+  const secs = ([a, b]) => rand(a * 1000, b * 1000);
+
   /* ---------------- storage helpers ---------------- */
 
   async function getStore(keys) {
@@ -775,6 +788,14 @@
     const hasNote = !!((settings.note || '').trim() || (settings.shortNote || '').trim());
     const isFree = settings.mode === 'free';
     let capMessage = '';
+    const MODES = globalThis.CONNECTO_MODES;
+    const SAFE = MODES.SAFE;
+    const safe = MODES.runMode(settings) === 'safe';
+    state.runMode = safe ? 'safe' : 'crazy';
+    const acct = isFree ? 'Free' : 'Premium';
+    const dayCap = SAFE.daily[settings.mode] || SAFE.daily.free;
+    const weekCap = SAFE.weekly[settings.mode] || SAFE.weekly.free;
+    let sentToday = 0, sentWeek = 0;
 
     try {
       if (!isSearchPage()) throw new StopRun('Open a LinkedIn People search results page first.');
@@ -790,7 +811,22 @@
         }
       }
 
+      if (safe) {
+        const { history = [] } = await getStore('history');
+        const now = Date.now(), today = new Date().toDateString();
+        const sent = history.filter(h => h.result === 'sent');
+        sentToday = sent.filter(h => new Date(h.t).toDateString() === today).length;
+        sentWeek = sent.filter(h => h.t >= now - 7 * 864e5).length;
+        if (sentWeek >= weekCap) throw new StopRun(`Safe mode: you've sent ${sentWeek} invites in the last 7 days, the safe weekly limit for ${acct} (${weekCap}). Try again in a few days, or switch to Crazy mode at your own risk.`);
+        if (sentToday >= dayCap) throw new StopRun(`Safe mode: you've sent ${sentToday} invites today, the safe daily limit for ${acct} (${dayCap}). Come back tomorrow.`);
+      }
+      const safeCapMessage = () =>
+        sentWeek >= weekCap ? `Safe mode: reached the safe weekly limit for ${acct} (${weekCap} in 7 days). Try again in a few days.`
+        : sentToday >= dayCap ? `Safe mode: reached today's safe limit for ${acct} (${dayCap}). Come back tomorrow.` : '';
+
       let attempts = 0;
+      let sentThisRun = 0;
+      let lastWasSent = false;
       let refusedInARow = 0;   // invites LinkedIn bounced back ("Connect again")
       // If the weekly limit was hit in the last 7 days, stop at the first bounce.
       const { weeklyLimitHitAt } = await getStore('weeklyLimitHitAt');
@@ -837,7 +873,16 @@
             throw new StopRun('Out of personalized notes for this month. Stopped, as set in your options.');
           }
 
-          if (attempts > 0) await sleep(rand(600, 1200)); // let LinkedIn finish re-rendering
+          if (safe) {
+            const cap = safeCapMessage();
+            if (cap) { capMessage = cap; break pages; }
+          }
+          if (attempts > 0) {
+            if (!safe) await sleep(rand(600, 1200)); // let LinkedIn finish re-rendering
+            else if (sentThisRun > 0 && sentThisRun % SAFE.breakEvery === 0 && lastWasSent) {
+              if (!(await pause(secs(SAFE.breakDelay), `Safe mode: short break after ${sentThisRun} invites. Next invite in`))) break pages;
+            } else if (!(await pause(secs(SAFE.inviteDelay), 'Safe mode: next invite in'))) break pages;
+          }
           attempts++;
 
           const picked = NOTE.pick(settings, info.name);
@@ -857,8 +902,9 @@
           if (res.noteWhich) settings = await resolveSettings(settings); // limit was just re-read
 
           if (res.noteLimitHit) { notesExhausted = true; await setNoteQuota({ exhausted: true, reportedLeft: 0 }); await markFreeIfUnknown(); }
+          lastWasSent = res.result === 'sent';
           if (res.result === 'sent') {
-            state.sent++;
+            state.sent++; sentThisRun++; sentToday++; sentWeek++;
           } else if (res.result === 'skipped') state.skipped++;
           else state.failed++;
           state.processed++;
@@ -875,6 +921,11 @@
         }
 
         if (stopRequested) break;
+        if (safe) {
+          const cap = safeCapMessage();
+          if (cap) { capMessage = cap; break; }
+          if (!(await pause(secs(SAFE.pageDelay), 'Safe mode: next page in'))) break;
+        }
         state.message = 'Opening the next page…';
         await push();
         if (!(await goNextPage())) { capMessage = 'No more result pages.'; break; }
@@ -882,7 +933,7 @@
 
       const summary = `${state.sent} sent, ${state.skipped} skipped, ${state.failed} failed${page > 1 ? ` across ${page} pages` : ''}.`;
       if (stopRequested) { state.status = 'stopped'; state.message = `Stopped by you. ${summary}`; }
-      else { state.status = 'done'; state.message = `Done. ${summary}${capMessage ? ' ' + capMessage : ''}`; }
+      else { state.status = 'done'; state.message = `Done${safe ? ' (Safe mode)' : ' (Crazy mode)'}. ${summary}${capMessage ? ' ' + capMessage : ''}`; }
     } catch (e) {
       state.status = e instanceof StopRun ? 'stopped' : 'error';
       state.message = e.message || String(e);

@@ -18,6 +18,24 @@
 
   <section class="block">
     <div class="row">
+      <span class="label">Run mode</span>
+      <div class="seg" role="radiogroup" aria-label="Run mode">
+        <button type="button" role="radio" data-run="safe">Safe</button>
+        <button type="button" role="radio" data-run="crazy">Crazy</button>
+      </div>
+    </div>
+    <p id="runHint" class="hint"></p>
+    <div id="crazyWarn" class="danger-box" role="alert" hidden>
+      <strong>⚠️ Crazy mode: your account can get restricted or banned.</strong>
+      No delays and no limits: invites go out back to back until LinkedIn itself refuses them.
+      LinkedIn's User Agreement does not allow bots or automated tools that send connection
+      requests, and rapid bulk invites are exactly what its detection looks for. Abuse can get
+      your account restricted or permanently banned. Use at your own risk.
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="row">
       <span class="label">Account type</span>
       <div class="seg" role="radiogroup" aria-label="Account type">
         <button type="button" role="radio" data-mode="auto">Auto</button>
@@ -74,9 +92,10 @@
       <div><dt>Personalized notes left</dt><dd id="uNotesLeft">–</dd></div>
       <div><dt>Note length limit</dt><dd id="uNoteLen">–</dd></div>
       <div><dt>Account</dt><dd id="uAccount">–</dd></div>
+      <div id="uSafeWrap"><dt>Safe mode left</dt><dd id="uSafeLeft">–</dd></div>
     </dl>
     <p id="uWeeklyHit" class="warn" hidden></p>
-    <p class="hint">For information only. Connecto never slows down or stops because of these numbers. LinkedIn doesn't publish its weekly invitation limit; <span id="uWeekHint">about 100 a week is typical for Free accounts</span>. If you go over, LinkedIn shows a warning and blocks invites for a while.</p>
+    <p class="hint"><span id="uModeNote"></span> LinkedIn doesn't publish its weekly invitation limit; <span id="uWeekHint">about 100 a week is typical for Free accounts</span>. If you go over, LinkedIn shows a warning and blocks invites for a while.</p>
     <button type="button" id="clearHistory" class="link danger">Reset counters &amp; history</button>
   </details>
 
