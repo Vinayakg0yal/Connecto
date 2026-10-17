@@ -7,37 +7,42 @@
 </head>
 <body>
   <header class="top">
-    <img src="icons/icon32.png" alt="" width="24" height="24">
+    <img class="logo" src="icons/icon48.png" alt="" width="34" height="34">
     <div class="brand">
       <h1>Connecto</h1>
-      <p>Invite the people on this results page</p>
+      <p>Invite everyone on this LinkedIn search</p>
     </div>
   </header>
 
   <div id="pageBanner" class="banner" hidden></div>
 
-  <section class="block">
-    <div class="row">
-      <span class="label">Run mode</span>
-      <div class="seg" role="radiogroup" aria-label="Run mode">
-        <button type="button" role="radio" data-run="safe">Safe</button>
-        <button type="button" role="radio" data-run="crazy">Crazy</button>
-      </div>
+  <!-- Run mode: the big switch -->
+  <section class="sec">
+    <div class="mode seg" role="radiogroup" aria-label="Run mode">
+      <span class="thumb" aria-hidden="true"></span>
+      <button type="button" role="radio" data-run="safe">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        Safe
+      </button>
+      <button type="button" role="radio" data-run="crazy">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg>
+        Crazy
+      </button>
     </div>
     <p id="runHint" class="hint"></p>
     <div id="crazyWarn" class="danger-box" role="alert" hidden>
-      <strong>⚠️ Crazy mode: your account can get restricted or banned.</strong>
-      No delays and no limits: invites go out back to back until LinkedIn itself refuses them.
-      LinkedIn's User Agreement does not allow bots or automated tools that send connection
-      requests, and rapid bulk invites are exactly what its detection looks for. Abuse can get
-      your account restricted or permanently banned. Use at your own risk.
+      <strong>Your account can get restricted or banned</strong>
+      Invites go out back to back, with no limits, until LinkedIn refuses them.
+      LinkedIn's User Agreement doesn't allow bots that send connection requests, and
+      rapid bulk invites are exactly what it looks for. Use at your own risk.
     </div>
   </section>
 
-  <section class="block">
+  <!-- Account type -->
+  <section class="sec">
     <div class="row">
-      <span class="label">Account type</span>
-      <div class="seg" role="radiogroup" aria-label="Account type">
+      <span class="label">Account</span>
+      <div class="pills seg" role="radiogroup" aria-label="Account type">
         <button type="button" role="radio" data-mode="auto">Auto</button>
         <button type="button" role="radio" data-mode="free">Free</button>
         <button type="button" role="radio" data-mode="premium">Premium</button>
@@ -47,30 +52,33 @@
     <p id="modeHint" class="hint"></p>
   </section>
 
-  <section class="block">
-    <label class="label" for="note">Connection note <span class="muted">optional</span></label>
-    <textarea id="note" rows="5" spellcheck="true"
-      placeholder="Hi {firstName}, I'm a software developer in Toronto exploring new roles and would love to connect."></textarea>
-    <div class="row small">
-      <div class="chips">
-        <button type="button" class="chip" data-insert="{firstName}">+ First name</button>
-        <button type="button" class="chip" data-insert="{name}">+ Full name</button>
-      </div>
+  <!-- Note -->
+  <section class="sec card">
+    <div class="row">
+      <label class="label" for="note">Note <span class="muted">optional</span></label>
       <span id="charCount" class="count">0 / 200</span>
+    </div>
+    <textarea id="note" rows="4" spellcheck="true"
+      placeholder="Hi {firstName}, I'm a software developer in Toronto exploring new roles and would love to connect."></textarea>
+    <div class="chips">
+      <button type="button" class="chip" data-insert="{firstName}">+ First name</button>
+      <button type="button" class="chip" data-insert="{name}">+ Full name</button>
     </div>
 
     <div id="shortBox" class="shortbox" hidden>
       <p id="lengthHint" class="warn"></p>
-      <label class="label" for="shortNote">Short version <span class="muted">used when the full note doesn't fit</span></label>
+      <div class="row">
+        <label class="label" for="shortNote">Short version <span class="muted">if the note doesn't fit</span></label>
+        <span id="shortCount" class="count">0 / 200</span>
+      </div>
       <textarea id="shortNote" rows="3" spellcheck="true"
         placeholder="Hi {firstName}, I'm a developer in Toronto looking for my next role. Would love to connect!"></textarea>
-      <div class="row small"><span></span><span id="shortCount" class="count">0 / 200</span></div>
     </div>
 
     <div id="freeBox" class="freebox">
-      <label class="row small" for="fallback">
-        <span>When notes run out</span>
-        <select id="fallback">
+      <label class="row" for="fallback">
+        <span class="muted">When notes run out</span>
+        <select id="fallback" class="select-pill">
           <option value="withoutNote">Send without a note</option>
           <option value="stop">Stop the run</option>
         </select>
@@ -78,37 +86,17 @@
     </div>
   </section>
 
-  <details class="block usage" id="usage" open>
-    <summary>Usage &amp; limits</summary>
-    <div class="row small">
-      <span>Sent in the last 7 days</span>
-      <strong><span id="uWeek">0</span> <span class="muted" id="uWeekCap">/ ~100</span></strong>
-    </div>
-    <div class="progress meter" aria-hidden="true"><div id="uWeekBar"></div></div>
-    <dl class="usage-list">
-      <div><dt>Sent today</dt><dd id="uToday">0</dd></div>
-      <div><dt>Sent this month</dt><dd id="uMonth">0</dd></div>
-      <div><dt>Notes sent this month</dt><dd id="uNotes">0</dd></div>
-      <div><dt>Personalized notes left</dt><dd id="uNotesLeft">–</dd></div>
-      <div><dt>Note length limit</dt><dd id="uNoteLen">–</dd></div>
-      <div><dt>Account</dt><dd id="uAccount">–</dd></div>
-      <div id="uSafeWrap"><dt>Safe mode left</dt><dd id="uSafeLeft">–</dd></div>
-    </dl>
-    <p id="uWeeklyHit" class="warn" hidden></p>
-    <p class="hint"><span id="uModeNote"></span> LinkedIn doesn't publish its weekly invitation limit; <span id="uWeekHint">about 100 a week is typical for Free accounts</span>. If you go over, LinkedIn shows a warning and blocks invites for a while.</p>
-    <button type="button" id="clearHistory" class="link danger">Reset counters &amp; history</button>
-  </details>
-
-  <section class="block run">
+  <!-- Run -->
+  <section class="sec card run">
     <div class="stats">
       <div class="stat ok"><span id="sSent">0</span><small>Sent</small></div>
       <div class="stat"><span id="sSkipped">0</span><small>Skipped</small></div>
       <div class="stat bad"><span id="sFailed">0</span><small>Failed</small></div>
     </div>
     <div class="progress" aria-hidden="true"><div id="bar"></div></div>
-    <div class="row small muted">
+    <div class="row meta">
       <span id="progressText">Ready</span>
-      <span id="weekText"></span>
+      <span id="weekText" class="pill-mini"></span>
     </div>
     <p id="message" class="message"></p>
     <div class="actions">
@@ -118,7 +106,29 @@
     </div>
   </section>
 
-  <section class="block log">
+  <!-- Usage -->
+  <details class="sec usage" id="usage">
+    <summary>
+      <span>Usage &amp; limits</span>
+      <span class="sum-right"><span id="uWeek">0</span><span class="muted" id="uWeekCap">/ ~100</span> this week</span>
+    </summary>
+    <div class="progress meter" aria-hidden="true"><div id="uWeekBar"></div></div>
+    <dl class="usage-list">
+      <div id="uSafeWrap" class="wide"><dt>Safe mode left</dt><dd id="uSafeLeft">–</dd></div>
+      <div><dt>Today</dt><dd id="uToday">0</dd></div>
+      <div><dt>This month</dt><dd id="uMonth">0</dd></div>
+      <div><dt>Notes this month</dt><dd id="uNotes">0</dd></div>
+      <div><dt>Notes left</dt><dd id="uNotesLeft">–</dd></div>
+      <div><dt>Note length</dt><dd id="uNoteLen">–</dd></div>
+      <div><dt>Account</dt><dd id="uAccount">–</dd></div>
+    </dl>
+    <p id="uWeeklyHit" class="warn" hidden></p>
+    <p class="hint"><span id="uModeNote"></span> LinkedIn doesn't publish its weekly invitation limit; <span id="uWeekHint">about 100 a week is typical for Free accounts</span>. Going over it blocks invites for a while.</p>
+    <button type="button" id="clearHistory" class="link danger">Reset counters &amp; history</button>
+  </details>
+
+  <!-- Activity -->
+  <section class="sec log">
     <div class="row">
       <span class="label">Activity</span>
       <button type="button" id="exportBtn" class="link">Export CSV</button>
