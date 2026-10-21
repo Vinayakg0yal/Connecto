@@ -53,7 +53,9 @@ Next: read [USAGE.md](USAGE.md) to set up your note and limits.
 
 ## Updating
 
-**If you downloaded a ZIP:** download the new ZIP, replace the files in your Connecto folder, then go to `chrome://extensions` and click the reload icon (↻) on the Connecto card.
+Connecto doesn't update itself (Chrome only auto-updates extensions from the Chrome Web Store). When a new version is out, the popup shows an amber **Update to vX.Y.Z** pill. Click it to open the release, then:
+
+**If you downloaded a ZIP:** download the new **Source code (zip)**, replace the files in your Connecto folder, then go to `chrome://extensions` and click the reload icon (↻) on the Connecto card.
 
 **If you cloned with git:**
 

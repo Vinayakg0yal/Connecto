@@ -53,6 +53,44 @@ const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() +
 
 init();
 
+/* ---------------- update check ---------------- */
+// Asks GitHub for the latest release (at most every 6 hours) and shows an
+// "Update available" pill when it's newer than the installed version.
+const RELEASES_API = 'https://api.github.com/repos/Vinayakg0yal/Connecto/releases/latest';
+const RELEASES_PAGE = 'https://github.com/Vinayakg0yal/Connecto/releases/latest';
+const UPDATE_TTL = 6 * 60 * 60 * 1000;
+
+function newerVersion(a, b) { // true if version a > version b
+  const pa = String(a).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+  const pb = String(b).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
+  }
+  return false;
+}
+
+async function checkForUpdate() {
+  const installed = chrome.runtime.getManifest().version;
+  let { updateInfo } = await chrome.storage.local.get('updateInfo');
+  if (!updateInfo || Date.now() - (updateInfo.checkedAt || 0) > UPDATE_TTL) {
+    try {
+      const r = await fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' });
+      if (r.ok) {
+        const j = await r.json();
+        updateInfo = { latest: String(j.tag_name || '').replace(/^v/i, ''), url: j.html_url || RELEASES_PAGE, checkedAt: Date.now() };
+        await chrome.storage.local.set({ updateInfo });
+      }
+    } catch (_) { /* offline or rate-limited: try again next time */ }
+  }
+  const pill = $('updatePill');
+  if (updateInfo && updateInfo.latest && newerVersion(updateInfo.latest, installed)) {
+    pill.hidden = false;
+    pill.textContent = `Update to v${updateInfo.latest}`;
+    pill.title = `You have v${installed}. Download v${updateInfo.latest}, replace the files in your Connecto folder, then press ↻ on Connecto in chrome://extensions.`;
+    pill.onclick = () => { chrome.tabs.create({ url: updateInfo.url || RELEASES_PAGE }); window.close(); };
+  } else pill.hidden = true;
+}
+
 async function init() {
   const store = await chrome.storage.local.get(['settings', 'run', 'history', 'noteQuota', 'detected', 'weeklyLimitHitAt', 'weeklyLimitHow']);
   settings = { ...DEFAULTS, ...(store.settings || {}) };
@@ -543,3 +581,5 @@ function exportCsv() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
+
+checkForUpdate();

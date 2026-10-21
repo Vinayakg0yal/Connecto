@@ -5,7 +5,7 @@ Connecto is a Manifest V3 Chrome extension with two halves that talk through Chr
 - **The popup** (`popup.html`, `popup.css`, `popup.js`) holds your settings and buttons, and shows live progress.
 - **The content script** (`selectors.js`, `note.js`, `content.js`) runs inside `linkedin.com` tabs and does the actual clicking.
 
-There's no background service worker, no server and no network calls of its own.
+There's no background service worker and no server. Its only network call of its own is the update check described below.
 
 ```
 ┌──────────────────────┐   PING / DETECT / SCAN / START / STOP   ┌───────────────────────────┐
@@ -144,6 +144,10 @@ Every run is multi-page, in both modes. After finishing a page (and, in Safe mod
 
 The page script reports its version (from `manifest.json`) when the popup pings it. If an open LinkedIn tab is still running an older copy, which happens when Connecto is updated while the tab is open, the popup doesn't inject a second copy next to it, because both could respond to **Send invites**. It shows an **Update now** banner instead, which refreshes the tab and reloads the extension.
 
+## Update check
+
+Extensions loaded with **Load unpacked** don't update themselves, so the popup checks for new releases instead. When it opens, it fetches `https://api.github.com/repos/Vinayakg0yal/Connecto/releases/latest` (GitHub's public API; no permission or sign-in needed) at most every 6 hours, and caches the answer in `chrome.storage.local` as `updateInfo`. If the latest release's tag is a higher version than `manifest.json`, an **Update to vX.Y.Z** pill appears in the header; clicking it opens the release page. Offline or rate-limited checks fail silently and are retried next time. Nothing about the user is sent.
+
 ## Storage
 
 Everything lives in `chrome.storage.local` in your browser:
@@ -153,6 +157,7 @@ Everything lives in `chrome.storage.local` in your browser:
 | `settings` | Your popup settings (run mode, note, short note, account type choice, what to do when notes run out) |
 | `run` | Live state of the current or last run (status, counters, last 300 log lines) |
 | `history` | Every invite result with timestamp, name, profile URL, and whether a note was used (last 5,000) |
+| `updateInfo` | Latest release version and link from the last update check, and when it was checked |
 | `noteQuota` | This month's Free note usage and whether LinkedIn said you're out |
 | `weeklyLimitHitAt`, `weeklyLimitHow` | When the weekly limit was last hit, and whether LinkedIn showed a warning or silently bounced invites |
 | `detected` | Detected account type and the note limits read from LinkedIn |
