@@ -11,7 +11,7 @@
 
 <p align="center">
   <img alt="Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest%20V3-1fb6a6">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.0-f59e0b">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.1-f59e0b">
   <img alt="No dependencies" src="https://img.shields.io/badge/dependencies-none-0b1f2c">
 </p>
 
@@ -26,6 +26,7 @@ It only runs when you press a button, only on the LinkedIn tab you're looking at
 ## Features
 
 - **Message templates**: one tap for a polite job-hunt, cold, recruiter, referral or networking note, sized to your account's limit.
+- **Tip button**: an optional ☕ Ko-fi link at the bottom of the popup. Connecto stays free either way.
 - **Update notice**: an **Update to vX.Y.Z** pill appears in the popup when a newer release is out.
 - **Personalized notes** with `{firstName}` and `{name}` placeholders (names are cleaned of emoji, pronouns, "(Hiring)", ", MBA" and so on).
 - **Preview mode** shows who would be invited and who would be skipped, without clicking anything.
@@ -86,6 +87,10 @@ Connecto/
 | `https://www.linkedin.com/*` | The only site the extension runs on |
 
 No personal data is sent anywhere. There's no server, analytics or tracking. The only request Connecto makes on its own is a check of this repo's public GitHub releases (at most every 6 hours) to tell you when an update is available; it sends nothing about you or your LinkedIn activity.
+
+## Support
+
+Connecto is free forever, with no ads and no premium tier. If it saved you time, you can [leave a tip on Ko-fi](https://ko-fi.com/vinayakg0yal) ☕. It helps me keep building free tools like [Visa Slot Tracker and Yoinky](https://github.com/Vinayakg0yal).
 
 ## ⚠️ Important
 

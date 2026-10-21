@@ -285,3 +285,11 @@ body.crazy .btn.primary { background: var(--coral-fill); color: #fff; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Support footer */
+.support { margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--amber-soft); color: var(--amber-ink); }
+.support p { margin: 0 0 8px; font-size: 12px; }
+.support-row { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.support .kofi { display: inline-block; padding: 6px 12px; border-radius: 999px; background: var(--amber); color: #2a1a00; font-weight: 600; text-decoration: none; }
+.support .kofi:hover { filter: brightness(1.05); }
+.support .more { color: var(--amber-ink); font-size: 12px; text-decoration: underline; text-underline-offset: 2px; }
