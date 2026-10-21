@@ -70,6 +70,16 @@ body.crazy :focus-visible { outline-color: var(--coral); }
 }
 .banner .link { color: inherit; font-weight: 700; text-decoration: underline; margin-left: 4px; }
 
+/* Not on a People search: one clear way to get there */
+.banner.start {
+  display: flex; flex-direction: column; gap: 10px; padding: 14px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--ink); text-align: center;
+}
+.banner.start p { margin: 0; font-size: 13px; font-weight: 650; }
+.banner.start small { color: var(--muted); font-size: 11.5px; }
+.btn.go { width: 100%; }
+body.crazy .btn.go { background: var(--teal-bright); color: var(--teal-ink); }
+
 /* ---------- sections ---------- */
 .sec { margin: 0 0 12px; }
 .card, .fold {

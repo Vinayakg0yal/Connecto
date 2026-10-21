@@ -302,7 +302,33 @@ function renderBanner() {
   const onSearch = tab && SEARCH_RE.test(tab.url || '');
   if (onSearch) { b.hidden = true; return; }
   b.hidden = false;
-  b.textContent = 'Open a LinkedIn People search (Search → People) in this tab, then reopen this popup.';
+  b.className = 'banner start';
+  b.textContent = '';
+  const p = document.createElement('p');
+  p.textContent = 'Connecto works on a LinkedIn People search.';
+  const go = document.createElement('button');
+  go.type = 'button';
+  go.className = 'btn primary go';
+  go.textContent = 'Go to LinkedIn search';
+  go.addEventListener('click', openSearch);
+  const small = document.createElement('small');
+  small.textContent = 'Search for anyone (for example "recruiter"), then open Connecto again.';
+  b.append(p, go, small);
+}
+
+// Opens LinkedIn's People search: in this tab if it's already LinkedIn or a
+// new-tab page, otherwise (including when the tab's address is unknown) in a new tab.
+const PEOPLE_SEARCH_URL = 'https://www.linkedin.com/search/results/people/';
+async function openSearch() {
+  const url = (tab && (tab.url || tab.pendingUrl)) || '';
+  const reuse = !!url && (/^https:\/\/([a-z]+\.)?linkedin\.com\//.test(url) || /^(chrome|edge|brave):\/\/newtab|^about:blank$/.test(url));
+  try {
+    if (reuse) await chrome.tabs.update(tab.id, { url: PEOPLE_SEARCH_URL });
+    else await chrome.tabs.create({ url: PEOPLE_SEARCH_URL });
+  } catch (_) {
+    await chrome.tabs.create({ url: PEOPLE_SEARCH_URL });
+  }
+  window.close();
 }
 
 function renderRun() {
@@ -457,6 +483,7 @@ function showStale() {
   stale = true;
   const b = $('pageBanner');
   b.hidden = false;
+  b.className = 'banner';
   b.textContent = '';
   b.append('This LinkedIn tab is running an older version of Connecto. ');
   const btn = document.createElement('button');

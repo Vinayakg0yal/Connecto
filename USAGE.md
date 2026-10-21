@@ -6,7 +6,7 @@ On LinkedIn, search for anything and choose the **People** filter, then add any 
 
 ## 2. Open the popup
 
-Click the Connecto icon in the toolbar. If you're not on a People search page, a banner tells you so.
+Click the Connecto icon in the toolbar. If you're not on a People search yet, the popup shows a **Go to LinkedIn search** button: click it and LinkedIn's People search opens (in the same tab if you're already on LinkedIn, otherwise in a new tab). Search for anyone, then open Connecto again.
 
 ## 3. Run mode: Safe or Crazy
 
