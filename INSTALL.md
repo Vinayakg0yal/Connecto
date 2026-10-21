@@ -43,12 +43,11 @@ The Connecto icon is now one click away.
 
 ## 4. Check that it works
 
-1. Go to LinkedIn and search for something, then choose the **People** filter.
-   The address should start with `https://www.linkedin.com/search/results/people`.
-2. Click the Connecto icon.
-3. Click **Preview**. You should see a list of people marked "Ready" or "Skipped". Preview never clicks anything.
+1. Click the Connecto icon. Unless you're already on a LinkedIn People search, you'll see a **Go to LinkedIn search** button. Click it.
+2. LinkedIn's People search opens. Search for anyone (for example "recruiter"), and add filters if you like.
+3. Click the Connecto icon again, then **Preview**. You should see a list of people marked "Ready" or "Skipped". Preview never clicks anything.
 
-If the popup says you need to be on a People search page, check the URL from step 1. If you had the LinkedIn tab open before installing, reload it once.
+If you had LinkedIn open before installing, reload that tab once.
 
 Next: read [USAGE.md](USAGE.md) to set up your note and limits.
 

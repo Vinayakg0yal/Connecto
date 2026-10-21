@@ -11,7 +11,7 @@
 
 <p align="center">
   <img alt="Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest%20V3-1fb6a6">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.3.0-f59e0b">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.3.1-f59e0b">
   <img alt="No dependencies" src="https://img.shields.io/badge/dependencies-none-0b1f2c">
 </p>
 
@@ -44,8 +44,8 @@ It only runs when you press a button, only on the LinkedIn tab you're looking at
 
 1. Download the ZIP from the [latest release](https://github.com/Vinayakg0yal/Connecto/releases/latest) and unzip it (or clone this repo).
 2. Go to `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and pick the `Connecto` folder.
-3. On LinkedIn, search for people (for example "technical recruiter" in Greater Toronto Area).
-4. Click the Connecto icon → write your note → **Preview** → **Send invites**.
+3. Click the Connecto icon, then **Go to LinkedIn search**. Search for people (for example "technical recruiter" in Greater Toronto Area).
+4. Click the Connecto icon again → write your note → **Preview** → **Send invites**.
 
 Full step-by-step instructions are in **[INSTALL.md](INSTALL.md)**.
 
